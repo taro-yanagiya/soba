@@ -46,6 +46,13 @@ fn eval(expr: &Expr) -> i32 {
             }
         }
         Expr::Grouped(inner) => eval(inner),
+        Expr::UnaryExpr { op, operand } => {
+            let value = eval(operand);
+            match op {
+                parser::UnaryOp::Plus => value,
+                parser::UnaryOp::Minus => -value,
+            }
+        }
     }
 }
 
@@ -70,6 +77,16 @@ mod tests {
         do_eval("1 + (2 * 3)", 7);
         do_eval("(1 + 2) * (3 + 4)", 21);
         do_eval("((1 + 2) * 3)", 9);
+    }
+
+    #[test]
+    fn test_eval_unary() {
+        do_eval("-1 + 3", 2);
+        do_eval("+3 - 1", 2);
+        do_eval("2 + (-4)", -2);
+        do_eval("(-2) * 5", -10);
+        do_eval("+5", 5);
+        do_eval("-10", -10);
     }
 
     fn do_eval(input: &str, expect: i32) {

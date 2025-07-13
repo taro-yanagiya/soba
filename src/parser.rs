@@ -9,6 +9,10 @@ pub enum Expr {
         right: Box<Expr>,
     },
     Grouped(Box<Expr>),
+    UnaryExpr {
+        op: UnaryOp,
+        operand: Box<Expr>,
+    },
 }
 
 #[derive(Debug, PartialEq, PartialOrd)]
@@ -16,6 +20,7 @@ pub enum Precedence {
     LOWEST,
     SUM,
     PRODUCT,
+    UNARY,
     GROUP,
 }
 
@@ -35,6 +40,12 @@ pub enum Op {
     Plus,
     Minus,
     Asterisk,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum UnaryOp {
+    Plus,
+    Minus,
 }
 
 pub struct Parser<'a> {
@@ -69,6 +80,22 @@ impl<'a> Parser<'a> {
                 }
                 self.next_token();
                 Box::new(Expr::Grouped(expr))
+            }
+            Token::Plus => {
+                self.next_token();
+                let operand = self.parse_expr(Precedence::UNARY)?;
+                Box::new(Expr::UnaryExpr {
+                    op: UnaryOp::Plus,
+                    operand,
+                })
+            }
+            Token::Minus => {
+                self.next_token();
+                let operand = self.parse_expr(Precedence::UNARY)?;
+                Box::new(Expr::UnaryExpr {
+                    op: UnaryOp::Minus,
+                    operand,
+                })
             }
             _ => panic!("parse error"),
         };
@@ -239,6 +266,43 @@ mod tests {
                     right: Box::new(Expr::Int(2)),
                 }))),
                 op: Op::Asterisk,
+                right: Box::new(Expr::Int(3)),
+            },
+        )
+    }
+
+    #[test]
+    fn test_parse_unary_plus() {
+        assert_parse(
+            vec![Token::Plus, Token::Int(1)],
+            Expr::UnaryExpr {
+                op: UnaryOp::Plus,
+                operand: Box::new(Expr::Int(1)),
+            },
+        )
+    }
+
+    #[test]
+    fn test_parse_unary_minus() {
+        assert_parse(
+            vec![Token::Minus, Token::Int(1)],
+            Expr::UnaryExpr {
+                op: UnaryOp::Minus,
+                operand: Box::new(Expr::Int(1)),
+            },
+        )
+    }
+
+    #[test]
+    fn test_parse_unary_with_infix() {
+        assert_parse(
+            vec![Token::Minus, Token::Int(1), Token::Plus, Token::Int(3)],
+            Expr::InfixExpr {
+                left: Box::new(Expr::UnaryExpr {
+                    op: UnaryOp::Minus,
+                    operand: Box::new(Expr::Int(1)),
+                }),
+                op: Op::Plus,
                 right: Box::new(Expr::Int(3)),
             },
         )
