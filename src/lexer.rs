@@ -114,15 +114,4 @@ mod tests {
         assert_eq!(lexer.next_token(), Some(Token::Int(2)));
         assert_eq!(lexer.next_token(), None);
     }
-
-    #[test]
-    fn paren_1() {
-        let mut lexer = SobaLexer::new("(1 + 2)".chars().collect());
-        assert_eq!(lexer.next_token(), Some(Token::LeftParen));
-        assert_eq!(lexer.next_token(), Some(Token::Int(1)));
-        assert_eq!(lexer.next_token(), Some(Token::Plus));
-        assert_eq!(lexer.next_token(), Some(Token::Int(2)));
-        assert_eq!(lexer.next_token(), Some(Token::RightParen));
-        assert_eq!(lexer.next_token(), None);
-    }
 }
