@@ -8,6 +8,7 @@ pub enum Expr {
         op: Op,
         right: Box<Expr>,
     },
+    Grouped(Box<Expr>),
 }
 
 #[derive(Debug, PartialEq, PartialOrd)]
@@ -15,6 +16,7 @@ pub enum Precedence {
     LOWEST,
     SUM,
     PRODUCT,
+    GROUP,
 }
 
 impl Precedence {
@@ -22,6 +24,7 @@ impl Precedence {
         match token {
             Token::Plus | Token::Minus => Precedence::SUM,
             Token::Asterisk => Precedence::PRODUCT,
+            Token::LeftParen => Precedence::GROUP,
             _ => Precedence::LOWEST,
         }
     }
@@ -58,6 +61,15 @@ impl<'a> Parser<'a> {
     fn parse_expr(&mut self, precedence: Precedence) -> Option<Box<Expr>> {
         let mut left = match self.current_token.as_ref()? {
             Token::Int(i) => Box::new(Expr::Int(*i)),
+            Token::LeftParen => {
+                self.next_token();
+                let expr = self.parse_expr(Precedence::LOWEST)?;
+                if self.peek != Some(Token::RightParen) {
+                    panic!("expected closing parenthesis");
+                }
+                self.next_token();
+                Box::new(Expr::Grouped(expr))
+            }
             _ => panic!("parse error"),
         };
 
@@ -186,6 +198,48 @@ mod tests {
                     op: Op::Asterisk,
                     right: Box::new(Expr::Int(3)),
                 }),
+            },
+        )
+    }
+
+    #[test]
+    fn test_parse_grouped() {
+        assert_parse(
+            vec![
+                Token::LeftParen,
+                Token::Int(1),
+                Token::Plus,
+                Token::Int(2),
+                Token::RightParen,
+            ],
+            Expr::Grouped(Box::new(Expr::InfixExpr {
+                left: Box::new(Expr::Int(1)),
+                op: Op::Plus,
+                right: Box::new(Expr::Int(2)),
+            })),
+        )
+    }
+
+    #[test]
+    fn test_parse_grouped_precedence() {
+        assert_parse(
+            vec![
+                Token::LeftParen,
+                Token::Int(1),
+                Token::Plus,
+                Token::Int(2),
+                Token::RightParen,
+                Token::Asterisk,
+                Token::Int(3),
+            ],
+            Expr::InfixExpr {
+                left: Box::new(Expr::Grouped(Box::new(Expr::InfixExpr {
+                    left: Box::new(Expr::Int(1)),
+                    op: Op::Plus,
+                    right: Box::new(Expr::Int(2)),
+                }))),
+                op: Op::Asterisk,
+                right: Box::new(Expr::Int(3)),
             },
         )
     }

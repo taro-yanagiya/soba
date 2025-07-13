@@ -45,6 +45,7 @@ fn eval(expr: &Expr) -> i32 {
                 parser::Op::Asterisk => left * right,
             }
         }
+        Expr::Grouped(inner) => eval(inner),
     }
 }
 
@@ -61,6 +62,14 @@ mod tests {
         do_eval("1 + 2 + 3 - 4", 2);
         do_eval("3 * 3 + 1", 10);
         do_eval("1 + 2 * 3", 7);
+    }
+
+    #[test]
+    fn test_eval_grouped() {
+        do_eval("(1 + 2) * 3", 9);
+        do_eval("1 + (2 * 3)", 7);
+        do_eval("(1 + 2) * (3 + 4)", 21);
+        do_eval("((1 + 2) * 3)", 9);
     }
 
     fn do_eval(input: &str, expect: i32) {
