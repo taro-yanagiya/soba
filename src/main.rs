@@ -2,35 +2,66 @@ mod lexer;
 mod parser;
 
 use parser::Expr;
-use std::io::{self, Write};
+use rustyline::error::ReadlineError;
+use rustyline::DefaultEditor;
 
 pub use crate::lexer::Lexer;
 use crate::{lexer::SobaLexer, parser::Parser};
-fn main() {
+fn main() -> rustyline::Result<()> {
     println!("This is the Soba programming language!");
+    
+    let mut rl = DefaultEditor::new()?;
+    
+    // Load history from file
+    let history_file = ".soba_history";
+    if rl.load_history(history_file).is_err() {
+        // History file doesn't exist, that's fine
+    }
+    
     loop {
-        print!(">> ");
-        io::stdout().flush().unwrap();
-
-        let mut input = String::new();
-        io::stdin()
-            .read_line(&mut input)
-            .ok()
-            .expect("failed to read line");
-
-        if input == "exit\n" {
-            break;
-        }
-
-        let mut lexer = SobaLexer::new(input.chars().collect());
-        let mut parser = Parser::new(&mut lexer);
-
-        let expr = parser.parse();
-
-        if let Some(expr) = expr {
-            println!("{}", eval(&expr))
+        let readline = rl.readline(">> ");
+        match readline {
+            Ok(line) => {
+                // Add to history
+                let _ = rl.add_history_entry(&line);
+                
+                if line.trim() == "exit" {
+                    break;
+                }
+                
+                if line.trim().is_empty() {
+                    continue;
+                }
+                
+                let mut lexer = SobaLexer::new(line.chars().collect());
+                let mut parser = Parser::new(&mut lexer);
+                
+                match parser.parse() {
+                    Some(expr) => {
+                        println!("{}", eval(&expr));
+                    }
+                    None => {
+                        println!("Parse error");
+                    }
+                }
+            }
+            Err(ReadlineError::Interrupted) => {
+                break;
+            }
+            Err(ReadlineError::Eof) => {
+                break;
+            }
+            Err(err) => {
+                println!("Error: {:?}", err);
+                break;
+            }
         }
     }
+    
+    // Save history to file
+    let _ = rl.save_history(history_file);
+    
+    Ok(())
 }
 
 fn eval(expr: &Expr) -> i32 {
