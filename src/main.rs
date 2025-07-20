@@ -2,6 +2,7 @@ mod lexer;
 mod parser;
 
 use parser::Expr;
+use rustyline::config::Configurer;
 use rustyline::error::ReadlineError;
 use rustyline::DefaultEditor;
 
@@ -11,6 +12,9 @@ fn main() -> rustyline::Result<()> {
     println!("This is the Soba programming language!");
     
     let mut rl = DefaultEditor::new()?;
+    
+    // Set maximum history size to 1000 entries
+    rl.set_max_history_size(1000)?;
     
     // Load history from file
     let history_file = ".soba_history";
