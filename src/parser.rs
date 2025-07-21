@@ -3,6 +3,7 @@ use crate::{lexer::Token, Lexer};
 #[derive(Debug, PartialEq)]
 pub enum Expr {
     Int(i32),
+    Float(f64),
     InfixExpr {
         left: Box<Expr>,
         op: Op,
@@ -72,6 +73,7 @@ impl<'a> Parser<'a> {
     fn parse_expr(&mut self, precedence: Precedence) -> Option<Box<Expr>> {
         let mut left = match self.current_token.as_ref()? {
             Token::Int(i) => Box::new(Expr::Int(*i)),
+            Token::Float(f) => Box::new(Expr::Float(*f)),
             Token::LeftParen => {
                 self.next_token();
                 let expr = self.parse_expr(Precedence::LOWEST)?;
@@ -304,6 +306,38 @@ mod tests {
                 }),
                 op: Op::Plus,
                 right: Box::new(Expr::Int(3)),
+            },
+        )
+    }
+
+    #[test]
+    fn test_parse_float() {
+        assert_parse(
+            vec![Token::Float(3.14)],
+            Expr::Float(3.14),
+        )
+    }
+
+    #[test]
+    fn test_parse_float_infix() {
+        assert_parse(
+            vec![Token::Float(1.5), Token::Plus, Token::Float(2.5)],
+            Expr::InfixExpr {
+                left: Box::new(Expr::Float(1.5)),
+                op: Op::Plus,
+                right: Box::new(Expr::Float(2.5)),
+            },
+        )
+    }
+
+    #[test]
+    fn test_parse_mixed_types() {
+        assert_parse(
+            vec![Token::Int(3), Token::Plus, Token::Float(2.5)],
+            Expr::InfixExpr {
+                left: Box::new(Expr::Int(3)),
+                op: Op::Plus,
+                right: Box::new(Expr::Float(2.5)),
             },
         )
     }

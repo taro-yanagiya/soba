@@ -68,9 +68,10 @@ fn main() -> rustyline::Result<()> {
     Ok(())
 }
 
-fn eval(expr: &Expr) -> i32 {
+fn eval(expr: &Expr) -> f64 {
     match expr {
-        Expr::Int(n) => *n,
+        Expr::Int(n) => *n as f64,
+        Expr::Float(f) => *f,
         Expr::InfixExpr { left, op, right } => {
             let left = eval(left);
             let right = eval(right);
@@ -99,35 +100,50 @@ mod tests {
 
     #[test]
     fn test_eval() {
-        do_eval("1 + 2", 3);
-        do_eval("1 + 2 + 3", 6);
-        do_eval("1 + 2 + 3 - 4", 2);
-        do_eval("3 * 3 + 1", 10);
-        do_eval("1 + 2 * 3", 7);
+        do_eval("1 + 2", 3.0);
+        do_eval("1 + 2 + 3", 6.0);
+        do_eval("1 + 2 + 3 - 4", 2.0);
+        do_eval("3 * 3 + 1", 10.0);
+        do_eval("1 + 2 * 3", 7.0);
     }
 
     #[test]
     fn test_eval_grouped() {
-        do_eval("(1 + 2) * 3", 9);
-        do_eval("1 + (2 * 3)", 7);
-        do_eval("(1 + 2) * (3 + 4)", 21);
-        do_eval("((1 + 2) * 3)", 9);
+        do_eval("(1 + 2) * 3", 9.0);
+        do_eval("1 + (2 * 3)", 7.0);
+        do_eval("(1 + 2) * (3 + 4)", 21.0);
+        do_eval("((1 + 2) * 3)", 9.0);
     }
 
     #[test]
     fn test_eval_unary() {
-        do_eval("-1 + 3", 2);
-        do_eval("+3 - 1", 2);
-        do_eval("2 + (-4)", -2);
-        do_eval("(-2) * 5", -10);
-        do_eval("+5", 5);
-        do_eval("-10", -10);
+        do_eval("-1 + 3", 2.0);
+        do_eval("+3 - 1", 2.0);
+        do_eval("2 + (-4)", -2.0);
+        do_eval("(-2) * 5", -10.0);
+        do_eval("+5", 5.0);
+        do_eval("-10", -10.0);
     }
 
-    fn do_eval(input: &str, expect: i32) {
+    #[test]
+    fn test_eval_float() {
+        do_eval("3.14", 3.14);
+        do_eval("1.5 + 2.5", 4.0);
+        do_eval("3.0 * 2.0", 6.0);
+        do_eval("5.0 - 1.5", 3.5);
+    }
+
+    #[test]
+    fn test_eval_mixed() {
+        do_eval("3 + 2.5", 5.5);
+        do_eval("1.5 * 2", 3.0);
+        do_eval("10 - 3.14", 6.86);
+    }
+
+    fn do_eval(input: &str, expect: f64) {
         let mut lexer = SobaLexer::new(input.chars().collect());
         let mut parser = parser::Parser::new(&mut lexer);
         let result = eval(&parser.parse().unwrap());
-        assert_eq!(result, expect);
+        assert!((result - expect).abs() < 1e-10, "Expected {}, got {}", expect, result);
     }
 }

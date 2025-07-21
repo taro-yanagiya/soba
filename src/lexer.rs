@@ -1,6 +1,7 @@
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     Int(i32),
+    Float(f64),
     Plus,
     Minus,
     Asterisk,
@@ -47,16 +48,30 @@ impl Lexer for SobaLexer {
 
         let current = self.current()?;
 
-        let token = if is_number(current) {
+        let token = if is_number(current) || *current == '.' {
             let mut number = vec![*current];
-            while self.peek().is_some() && is_number(self.peek().unwrap()) {
-                self.forward();
-                number.push(*self.current().unwrap());
+            let mut has_dot = *current == '.';
+            
+            while self.peek().is_some() {
+                let next_char = self.peek().unwrap();
+                if is_number(next_char) {
+                    self.forward();
+                    number.push(*self.current().unwrap());
+                } else if *next_char == '.' && !has_dot {
+                    has_dot = true;
+                    self.forward();
+                    number.push(*self.current().unwrap());
+                } else {
+                    break;
+                }
             }
-            String::from_iter(number)
-                .parse()
-                .ok()
-                .and_then(|n| Some(Token::Int(n)))
+            
+            let number_str = String::from_iter(number);
+            if has_dot {
+                number_str.parse::<f64>().ok().map(Token::Float)
+            } else {
+                number_str.parse::<i32>().ok().map(Token::Int)
+            }
         } else {
             match current {
                 '+' => Some(Token::Plus),
@@ -127,6 +142,27 @@ mod tests {
         assert_eq!(lexer.next_token(), Some(Token::Plus));
         assert_eq!(lexer.next_token(), Some(Token::Int(2)));
         assert_eq!(lexer.next_token(), Some(Token::RightParen));
+        assert_eq!(lexer.next_token(), None);
+    }
+
+    #[test]
+    fn float_1() {
+        let mut lexer = SobaLexer::new("3.14".chars().collect());
+        assert_eq!(lexer.next_token(), Some(Token::Float(3.14)));
+        assert_eq!(lexer.next_token(), None);
+    }
+
+    #[test]
+    fn float_2() {
+        let mut lexer = SobaLexer::new(".5".chars().collect());
+        assert_eq!(lexer.next_token(), Some(Token::Float(0.5)));
+        assert_eq!(lexer.next_token(), None);
+    }
+
+    #[test]
+    fn float_3() {
+        let mut lexer = SobaLexer::new("5.".chars().collect());
+        assert_eq!(lexer.next_token(), Some(Token::Float(5.0)));
         assert_eq!(lexer.next_token(), None);
     }
 }
