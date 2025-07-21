@@ -111,6 +111,7 @@ impl Lexer for SobaLexer {
                         '+' => self.read_single_char_token(TokenKind::Plus),
                         '-' => self.read_single_char_token(TokenKind::Minus),
                         '*' => self.read_single_char_token(TokenKind::Asterisk),
+                        '/' => self.read_single_char_token(TokenKind::Slash),
                         '(' => self.read_single_char_token(TokenKind::LeftParen),
                         ')' => self.read_single_char_token(TokenKind::RightParen),
                         _ => return Err(LexError::UnexpectedCharacter(ch)),
@@ -157,11 +158,12 @@ mod tests {
 
     #[test]
     fn test_operators() {
-        let tokens = tokenize("+ - *").unwrap();
-        assert_eq!(tokens.len(), 3);
+        let tokens = tokenize("+ - * /").unwrap();
+        assert_eq!(tokens.len(), 4);
         assert_eq!(tokens[0].kind, TokenKind::Plus);
         assert_eq!(tokens[1].kind, TokenKind::Minus);
         assert_eq!(tokens[2].kind, TokenKind::Asterisk);
+        assert_eq!(tokens[3].kind, TokenKind::Slash);
     }
 
     #[test]
@@ -177,7 +179,16 @@ mod tests {
 
     #[test]
     fn test_expression() {
-        let tokens = tokenize("3.14 + 2 * (5 - 1)").unwrap();
-        assert_eq!(tokens.len(), 9);
+        let tokens = tokenize("3.14 + 2 * (5 - 1) / 2").unwrap();
+        assert_eq!(tokens.len(), 11);
+    }
+
+    #[test]
+    fn test_division_expression() {
+        let tokens = tokenize("8 / 2").unwrap();
+        assert_eq!(tokens.len(), 3);
+        assert_eq!(tokens[0].kind, TokenKind::Int(8));
+        assert_eq!(tokens[1].kind, TokenKind::Slash);
+        assert_eq!(tokens[2].kind, TokenKind::Int(2));
     }
 }

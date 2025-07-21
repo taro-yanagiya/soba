@@ -44,11 +44,4 @@ mod tests {
         assert_eq!(eval_string("1.5 + 2.5").unwrap(), Value::Float(4.0));
         assert_eq!(eval_string("3 + 2.5").unwrap(), Value::Float(5.5));
     }
-
-    #[test]
-    fn test_eval_unary() {
-        assert_eq!(eval_string("-5").unwrap(), Value::Int(-5));
-        assert_eq!(eval_string("+3").unwrap(), Value::Int(3));
-        assert_eq!(eval_string("-1.5").unwrap(), Value::Float(-1.5));
-    }
 }

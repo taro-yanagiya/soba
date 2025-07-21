@@ -17,7 +17,7 @@ impl Precedence {
     pub fn from_token(token: &TokenKind) -> Precedence {
         match token {
             TokenKind::Plus | TokenKind::Minus => Precedence::Sum,
-            TokenKind::Asterisk => Precedence::Product,
+            TokenKind::Asterisk | TokenKind::Slash => Precedence::Product,
             TokenKind::LeftParen => Precedence::Group,
             _ => Precedence::Lowest,
         }
@@ -64,7 +64,9 @@ mod tests {
     #[test]
     fn test_token_precedence() {
         assert_eq!(Precedence::from_token(&TokenKind::Plus), Precedence::Sum);
+        assert_eq!(Precedence::from_token(&TokenKind::Minus), Precedence::Sum);
         assert_eq!(Precedence::from_token(&TokenKind::Asterisk), Precedence::Product);
+        assert_eq!(Precedence::from_token(&TokenKind::Slash), Precedence::Product);
         assert_eq!(Precedence::from_token(&TokenKind::LeftParen), Precedence::Group);
         assert_eq!(Precedence::from_token(&TokenKind::Int(1)), Precedence::Lowest);
     }

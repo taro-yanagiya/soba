@@ -20,6 +20,7 @@ pub enum TokenKind {
     Plus,
     Minus,
     Asterisk,
+    Slash,
     
     // Delimiters
     LeftParen,
@@ -51,6 +52,7 @@ impl std::fmt::Display for TokenKind {
             TokenKind::Plus => write!(f, "+"),
             TokenKind::Minus => write!(f, "-"),
             TokenKind::Asterisk => write!(f, "*"),
+            TokenKind::Slash => write!(f, "/"),
             TokenKind::LeftParen => write!(f, "("),
             TokenKind::RightParen => write!(f, ")"),
             TokenKind::Eof => write!(f, "EOF"),

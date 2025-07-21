@@ -41,7 +41,8 @@ pub enum BinaryOp {
     Plus,
     Minus,
     Multiply,
-    // Future: Divide, Modulo, Equal, NotEqual, Less, Greater, etc.
+    Divide,
+    // Future: Modulo, Equal, NotEqual, Less, Greater, etc.
 }
 
 /// Unary operators
@@ -87,6 +88,7 @@ impl std::fmt::Display for BinaryOp {
             BinaryOp::Plus => write!(f, "+"),
             BinaryOp::Minus => write!(f, "-"),
             BinaryOp::Multiply => write!(f, "*"),
+            BinaryOp::Divide => write!(f, "/"),
         }
     }
 }

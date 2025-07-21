@@ -80,6 +80,7 @@ impl<L: Lexer> Parser<L> {
                     TokenKind::Plus => BinaryOp::Plus,
                     TokenKind::Minus => BinaryOp::Minus,
                     TokenKind::Asterisk => BinaryOp::Multiply,
+                    TokenKind::Slash => BinaryOp::Divide,
                     _ => return Err(ParseError::UnexpectedToken(token.to_string())),
                 };
 
@@ -196,5 +197,23 @@ mod tests {
     fn test_parse_unary() {
         let expr = parse_string("-5").unwrap();
         assert!(matches!(expr, Expr::UnaryExpr { op: UnaryOp::Minus, .. }));
+    }
+
+    #[test]
+    fn test_parse_division() {
+        let expr = parse_string("8 / 2").unwrap();
+        assert!(matches!(expr, Expr::InfixExpr { op: BinaryOp::Divide, .. }));
+    }
+
+    #[test]
+    fn test_parse_division_precedence() {
+        let expr = parse_string("2 + 8 / 4").unwrap();
+        if let Expr::InfixExpr { left, op, right, .. } = expr {
+            assert_eq!(op, BinaryOp::Plus);
+            assert!(matches!(left.as_ref(), Expr::Int { value: 2, .. }));
+            assert!(matches!(right.as_ref(), Expr::InfixExpr { op: BinaryOp::Divide, .. }));
+        } else {
+            panic!("Expected infix expression");
+        }
     }
 }

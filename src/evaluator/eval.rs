@@ -18,6 +18,7 @@ pub fn eval_expr(expr: &Expr) -> EvalResult<Value> {
                 BinaryOp::Plus => left_val.add_value(right_val),
                 BinaryOp::Minus => left_val.subtract_value(right_val),
                 BinaryOp::Multiply => left_val.multiply_value(right_val),
+                BinaryOp::Divide => left_val.divide_value(right_val),
             }
         }
         
@@ -75,5 +76,34 @@ mod tests {
         };
         
         assert_eq!(eval_expr(&expr).unwrap(), Value::Int(-5));
+    }
+
+    #[test]
+    fn test_eval_division() {
+        use crate::span::{Position, Span};
+        
+        let expr = Expr::InfixExpr {
+            left: Box::new(Expr::int(8)),
+            op: BinaryOp::Divide,
+            right: Box::new(Expr::int(2)),
+            span: Span::single(Position::start()),
+        };
+        
+        assert_eq!(eval_expr(&expr).unwrap(), Value::Float(4.0));
+    }
+
+    #[test]
+    fn test_eval_division_by_zero() {
+        use crate::span::{Position, Span};
+        use crate::error::EvalError;
+        
+        let expr = Expr::InfixExpr {
+            left: Box::new(Expr::int(5)),
+            op: BinaryOp::Divide,
+            right: Box::new(Expr::int(0)),
+            span: Span::single(Position::start()),
+        };
+        
+        assert!(matches!(eval_expr(&expr), Err(EvalError::DivisionByZero)));
     }
 }
