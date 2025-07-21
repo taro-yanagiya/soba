@@ -1,62 +1,29 @@
 //! Soba Programming Language
-//! 
-//! A simple arithmetic expression language with support for:
-//! - Integer and floating-point numbers
-//! - Basic arithmetic operations (+, -, *, /)
-//! - Unary operators (+, -)
-//! - Parentheses for grouping
-//! - Interactive REPL
 
 pub mod error;
 pub mod span;
 pub mod value;
-
-// Include the existing modules for now
-mod lexer;
-mod parser;
+pub mod ast;
+pub mod lexer;
+pub mod parser;
+pub mod evaluator;
 
 // Re-export commonly used types
 pub use error::{SobaError, SobaResult, LexError, ParseError, EvalError};
 pub use span::{Position, Span};
 pub use value::Value;
-pub use lexer::{Token, SobaLexer, Lexer};
-pub use parser::{Expr, Parser, Op, UnaryOp, Precedence};
+pub use ast::{Expr, BinaryOp, UnaryOp};
+pub use lexer::{Token, TokenKind, SobaLexer, Lexer};
+pub use parser::{Parser, Precedence};
+pub use evaluator::eval_expr;
 
 /// Evaluate a string expression and return the result
 pub fn eval_string(input: &str) -> SobaResult<Value> {
-    let mut lexer = SobaLexer::new(input.chars().collect());
-    let mut parser = Parser::new(&mut lexer);
+    let lexer = SobaLexer::new(input.chars().collect());
+    let mut parser = Parser::new(lexer).map_err(SobaError::ParseError)?;
     
-    match parser.parse() {
-        Some(expr) => eval_expr(&expr),
-        None => Err(SobaError::ParseError(ParseError::InvalidExpression)),
-    }
-}
-
-/// Evaluate an expression AST node
-pub fn eval_expr(expr: &Expr) -> SobaResult<Value> {
-    match expr {
-        Expr::Int(n) => Ok(Value::Int(*n)),
-        Expr::Float(f) => Ok(Value::Float(*f)),
-        Expr::InfixExpr { left, op, right } => {
-            let left_val = eval_expr(left)?;
-            let right_val = eval_expr(right)?;
-            
-            match op {
-                Op::Plus => left_val.add(right_val).map_err(SobaError::EvalError),
-                Op::Minus => left_val.subtract(right_val).map_err(SobaError::EvalError),
-                Op::Asterisk => left_val.multiply(right_val).map_err(SobaError::EvalError),
-            }
-        }
-        Expr::Grouped(inner) => eval_expr(inner),
-        Expr::UnaryExpr { op, operand } => {
-            let val = eval_expr(operand)?;
-            match op {
-                UnaryOp::Plus => val.positive().map_err(SobaError::EvalError),
-                UnaryOp::Minus => val.negate().map_err(SobaError::EvalError),
-            }
-        }
-    }
+    let expr = parser.parse().map_err(SobaError::ParseError)?;
+    eval_expr(&expr).map_err(SobaError::EvalError)
 }
 
 #[cfg(test)]

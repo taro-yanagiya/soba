@@ -101,6 +101,16 @@ impl From<EvalError> for SobaError {
     }
 }
 
+impl From<LexError> for ParseError {
+    fn from(err: LexError) -> Self {
+        match err {
+            LexError::InvalidNumber(s) => ParseError::UnexpectedToken(format!("invalid number: {}", s)),
+            LexError::UnexpectedCharacter(c) => ParseError::UnexpectedToken(format!("unexpected character: '{}'", c)),
+            LexError::UnterminatedString => ParseError::UnexpectedToken("unterminated string".to_string()),
+        }
+    }
+}
+
 /// Result type alias for Soba operations
 pub type SobaResult<T> = Result<T, SobaError>;
 pub type LexResult<T> = Result<T, LexError>;
