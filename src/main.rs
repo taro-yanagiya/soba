@@ -1,13 +1,7 @@
-mod lexer;
-mod parser;
-
-use parser::Expr;
 use rustyline::config::Configurer;
 use rustyline::error::ReadlineError;
 use rustyline::DefaultEditor;
-
-pub use crate::lexer::Lexer;
-use crate::{lexer::SobaLexer, parser::Parser};
+use soba::eval_string;
 fn main() -> rustyline::Result<()> {
     println!("This is the Soba programming language!");
     
@@ -37,15 +31,12 @@ fn main() -> rustyline::Result<()> {
                     continue;
                 }
                 
-                let mut lexer = SobaLexer::new(line.chars().collect());
-                let mut parser = Parser::new(&mut lexer);
-                
-                match parser.parse() {
-                    Some(expr) => {
-                        println!("{}", eval(&expr));
+                match eval_string(&line) {
+                    Ok(result) => {
+                        println!("{}", result);
                     }
-                    None => {
-                        println!("Parse error");
+                    Err(err) => {
+                        println!("{}", err);
                     }
                 }
             }
@@ -66,84 +57,4 @@ fn main() -> rustyline::Result<()> {
     let _ = rl.save_history(history_file);
     
     Ok(())
-}
-
-fn eval(expr: &Expr) -> f64 {
-    match expr {
-        Expr::Int(n) => *n as f64,
-        Expr::Float(f) => *f,
-        Expr::InfixExpr { left, op, right } => {
-            let left = eval(left);
-            let right = eval(right);
-            match op {
-                parser::Op::Plus => left + right,
-                parser::Op::Minus => left - right,
-                parser::Op::Asterisk => left * right,
-            }
-        }
-        Expr::Grouped(inner) => eval(inner),
-        Expr::UnaryExpr { op, operand } => {
-            let value = eval(operand);
-            match op {
-                parser::UnaryOp::Plus => value,
-                parser::UnaryOp::Minus => -value,
-            }
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::lexer::SobaLexer;
-
-    use super::*;
-
-    #[test]
-    fn test_eval() {
-        do_eval("1 + 2", 3.0);
-        do_eval("1 + 2 + 3", 6.0);
-        do_eval("1 + 2 + 3 - 4", 2.0);
-        do_eval("3 * 3 + 1", 10.0);
-        do_eval("1 + 2 * 3", 7.0);
-    }
-
-    #[test]
-    fn test_eval_grouped() {
-        do_eval("(1 + 2) * 3", 9.0);
-        do_eval("1 + (2 * 3)", 7.0);
-        do_eval("(1 + 2) * (3 + 4)", 21.0);
-        do_eval("((1 + 2) * 3)", 9.0);
-    }
-
-    #[test]
-    fn test_eval_unary() {
-        do_eval("-1 + 3", 2.0);
-        do_eval("+3 - 1", 2.0);
-        do_eval("2 + (-4)", -2.0);
-        do_eval("(-2) * 5", -10.0);
-        do_eval("+5", 5.0);
-        do_eval("-10", -10.0);
-    }
-
-    #[test]
-    fn test_eval_float() {
-        do_eval("3.14", 3.14);
-        do_eval("1.5 + 2.5", 4.0);
-        do_eval("3.0 * 2.0", 6.0);
-        do_eval("5.0 - 1.5", 3.5);
-    }
-
-    #[test]
-    fn test_eval_mixed() {
-        do_eval("3 + 2.5", 5.5);
-        do_eval("1.5 * 2", 3.0);
-        do_eval("10 - 3.14", 6.86);
-    }
-
-    fn do_eval(input: &str, expect: f64) {
-        let mut lexer = SobaLexer::new(input.chars().collect());
-        let mut parser = parser::Parser::new(&mut lexer);
-        let result = eval(&parser.parse().unwrap());
-        assert!((result - expect).abs() < 1e-10, "Expected {}, got {}", expect, result);
-    }
 }
