@@ -15,6 +15,8 @@ pub enum TokenKind {
     // Literals
     Int(i32),
     Float(f64),
+    True,
+    False,
     
     // Operators
     Plus,
@@ -49,6 +51,8 @@ impl std::fmt::Display for TokenKind {
         match self {
             TokenKind::Int(i) => write!(f, "{i}"),
             TokenKind::Float(fl) => write!(f, "{fl}"),
+            TokenKind::True => write!(f, "true"),
+            TokenKind::False => write!(f, "false"),
             TokenKind::Plus => write!(f, "+"),
             TokenKind::Minus => write!(f, "-"),
             TokenKind::Asterisk => write!(f, "*"),

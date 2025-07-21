@@ -9,6 +9,7 @@ pub fn eval_expr(expr: &Expr) -> EvalResult<Value> {
     match expr {
         Expr::Int { value, .. } => Ok(Value::Int(*value)),
         Expr::Float { value, .. } => Ok(Value::Float(*value)),
+        Expr::Bool { value, .. } => Ok(Value::Bool(*value)),
         
         Expr::InfixExpr { left, op, right, .. } => {
             let left_val = eval_expr(left)?;
@@ -105,5 +106,17 @@ mod tests {
         };
         
         assert!(matches!(eval_expr(&expr), Err(EvalError::DivisionByZero)));
+    }
+
+    #[test]
+    fn test_eval_boolean_true() {
+        let expr = Expr::bool(true);
+        assert_eq!(eval_expr(&expr).unwrap(), Value::Bool(true));
+    }
+
+    #[test]
+    fn test_eval_boolean_false() {
+        let expr = Expr::bool(false);
+        assert_eq!(eval_expr(&expr).unwrap(), Value::Bool(false));
     }
 }

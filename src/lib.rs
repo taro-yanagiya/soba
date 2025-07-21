@@ -44,4 +44,10 @@ mod tests {
         assert_eq!(eval_string("1.5 + 2.5").unwrap(), Value::Float(4.0));
         assert_eq!(eval_string("3 + 2.5").unwrap(), Value::Float(5.5));
     }
+
+    #[test]
+    fn test_eval_boolean() {
+        assert_eq!(eval_string("true").unwrap(), Value::Bool(true));
+        assert_eq!(eval_string("false").unwrap(), Value::Bool(false));
+    }
 }

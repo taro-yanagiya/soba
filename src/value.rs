@@ -8,6 +8,7 @@ use std::fmt;
 pub enum Value {
     Int(i32),
     Float(f64),
+    Bool(bool),
 }
 
 impl Value {
@@ -16,6 +17,7 @@ impl Value {
         match self {
             Value::Int(_) => "int",
             Value::Float(_) => "float",
+            Value::Bool(_) => "bool",
         }
     }
 
@@ -24,6 +26,7 @@ impl Value {
         match self {
             Value::Int(i) => *i as f64,
             Value::Float(f) => *f,
+            Value::Bool(b) => if *b { 1.0 } else { 0.0 },
         }
     }
 
@@ -38,6 +41,7 @@ impl Value {
                     None
                 }
             }
+            Value::Bool(b) => Some(if *b { 1 } else { 0 }),
         }
     }
 
@@ -46,6 +50,7 @@ impl Value {
         match self {
             Value::Int(i) => *i != 0,
             Value::Float(f) => *f != 0.0,
+            Value::Bool(b) => *b,
         }
     }
 
@@ -83,6 +88,7 @@ impl Value {
                     .ok_or(EvalError::Overflow)
             }
             Value::Float(f) => Ok(Value::Float(-f)),
+            Value::Bool(_) => Err(EvalError::TypeError("Cannot negate boolean value".to_string())),
         }
     }
 
@@ -103,6 +109,7 @@ impl fmt::Display for Value {
                     write!(f, "{fl}")
                 }
             }
+            Value::Bool(b) => write!(f, "{b}"),
         }
     }
 }
@@ -116,6 +123,12 @@ impl From<i32> for Value {
 impl From<f64> for Value {
     fn from(f: f64) -> Self {
         Value::Float(f)
+    }
+}
+
+impl From<bool> for Value {
+    fn from(b: bool) -> Self {
+        Value::Bool(b)
     }
 }
 

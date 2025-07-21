@@ -15,6 +15,11 @@ pub enum Expr {
         value: f64,
         span: Span,
     },
+    /// Boolean literal
+    Bool {
+        value: bool,
+        span: Span,
+    },
     /// Binary infix expression (e.g., 1 + 2)
     InfixExpr {
         left: Box<Expr>,
@@ -59,6 +64,7 @@ impl Expr {
         match self {
             Expr::Int { span, .. }
             | Expr::Float { span, .. }
+            | Expr::Bool { span, .. }
             | Expr::InfixExpr { span, .. }
             | Expr::Grouped { span, .. }
             | Expr::UnaryExpr { span, .. } => *span,
@@ -76,6 +82,14 @@ impl Expr {
     /// Create a simple float expression without span
     pub fn float(value: f64) -> Self {
         Expr::Float {
+            value,
+            span: Span::single(crate::span::Position::start()),
+        }
+    }
+
+    /// Create a simple boolean expression without span
+    pub fn bool(value: bool) -> Self {
+        Expr::Bool {
             value,
             span: Span::single(crate::span::Position::start()),
         }

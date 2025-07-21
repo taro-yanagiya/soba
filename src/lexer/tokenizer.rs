@@ -95,6 +95,33 @@ impl SobaLexer {
         let end_pos = self.position;
         Token::new(kind, Span::new(start_pos, end_pos))
     }
+
+    fn read_identifier(&mut self) -> LexResult<Token> {
+        let start_pos = self.position;
+        let mut identifier_chars = Vec::new();
+
+        // Read letters, digits, and underscores
+        while let Some(ch) = self.current_char() {
+            if ch.is_ascii_alphanumeric() || ch == '_' {
+                identifier_chars.push(self.advance().unwrap());
+            } else {
+                break;
+            }
+        }
+
+        let end_pos = self.position;
+        let span = Span::new(start_pos, end_pos);
+        let identifier: String = identifier_chars.iter().collect();
+
+        // Check for keywords
+        let kind = match identifier.as_str() {
+            "true" => TokenKind::True,
+            "false" => TokenKind::False,
+            _ => return Err(LexError::UnexpectedCharacter(identifier_chars[0])), // For now, only support keywords
+        };
+
+        Ok(Token::new(kind, span))
+    }
 }
 
 impl Lexer for SobaLexer {
@@ -106,6 +133,8 @@ impl Lexer for SobaLexer {
             Some(ch) => {
                 if ch.is_ascii_digit() || ch == '.' {
                     self.read_number().map(Some)
+                } else if ch.is_ascii_alphabetic() || ch == '_' {
+                    self.read_identifier().map(Some)
                 } else {
                     let token = match ch {
                         '+' => self.read_single_char_token(TokenKind::Plus),
@@ -190,5 +219,24 @@ mod tests {
         assert_eq!(tokens[0].kind, TokenKind::Int(8));
         assert_eq!(tokens[1].kind, TokenKind::Slash);
         assert_eq!(tokens[2].kind, TokenKind::Int(2));
+    }
+
+    #[test]
+    fn test_boolean_literals() {
+        let tokens = tokenize("true false").unwrap();
+        assert_eq!(tokens.len(), 2);
+        assert_eq!(tokens[0].kind, TokenKind::True);
+        assert_eq!(tokens[1].kind, TokenKind::False);
+    }
+
+    #[test]
+    fn test_boolean_expression() {
+        let tokens = tokenize("true").unwrap();
+        assert_eq!(tokens.len(), 1);
+        assert_eq!(tokens[0].kind, TokenKind::True);
+
+        let tokens = tokenize("false").unwrap();
+        assert_eq!(tokens.len(), 1);
+        assert_eq!(tokens[0].kind, TokenKind::False);
     }
 }

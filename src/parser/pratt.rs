@@ -65,6 +65,18 @@ impl<L: Lexer> Parser<L> {
                         span: token.span,
                     })
                 }
+                TokenKind::True => {
+                    Ok(Expr::Bool {
+                        value: true,
+                        span: token.span,
+                    })
+                }
+                TokenKind::False => {
+                    Ok(Expr::Bool {
+                        value: false,
+                        span: token.span,
+                    })
+                }
                 TokenKind::LeftParen => self.parse_grouped_expression(),
                 TokenKind::Plus | TokenKind::Minus => self.parse_unary_expression(),
                 _ => Err(ParseError::UnexpectedToken(token.to_string())),
@@ -215,5 +227,17 @@ mod tests {
         } else {
             panic!("Expected infix expression");
         }
+    }
+
+    #[test]
+    fn test_parse_boolean_true() {
+        let expr = parse_string("true").unwrap();
+        assert!(matches!(expr, Expr::Bool { value: true, .. }));
+    }
+
+    #[test]
+    fn test_parse_boolean_false() {
+        let expr = parse_string("false").unwrap();
+        assert!(matches!(expr, Expr::Bool { value: false, .. }));
     }
 }
