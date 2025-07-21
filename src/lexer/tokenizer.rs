@@ -29,10 +29,6 @@ impl SobaLexer {
         self.input.get(self.current_index).copied()
     }
 
-    fn peek_char(&self) -> Option<char> {
-        self.input.get(self.current_index + 1).copied()
-    }
-
     fn advance(&mut self) -> Option<char> {
         if let Some(ch) = self.current_char() {
             self.position.advance(ch);
