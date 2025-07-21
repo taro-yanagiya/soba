@@ -39,9 +39,9 @@ pub enum EvalError {
 impl fmt::Display for SobaError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            SobaError::LexError(e) => write!(f, "Lexing error: {}", e),
-            SobaError::ParseError(e) => write!(f, "Parse error: {}", e),
-            SobaError::EvalError(e) => write!(f, "Evaluation error: {}", e),
+            SobaError::LexError(e) => write!(f, "Lexing error: {e}"),
+            SobaError::ParseError(e) => write!(f, "Parse error: {e}"),
+            SobaError::EvalError(e) => write!(f, "Evaluation error: {e}"),
         }
     }
 }
@@ -49,8 +49,8 @@ impl fmt::Display for SobaError {
 impl fmt::Display for LexError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            LexError::InvalidNumber(s) => write!(f, "Invalid number: {}", s),
-            LexError::UnexpectedCharacter(c) => write!(f, "Unexpected character: '{}'", c),
+            LexError::InvalidNumber(s) => write!(f, "Invalid number: {s}"),
+            LexError::UnexpectedCharacter(c) => write!(f, "Unexpected character: '{c}'"),
             LexError::UnterminatedString => write!(f, "Unterminated string literal"),
         }
     }
@@ -59,7 +59,7 @@ impl fmt::Display for LexError {
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ParseError::UnexpectedToken(token) => write!(f, "Unexpected token: {}", token),
+            ParseError::UnexpectedToken(token) => write!(f, "Unexpected token: {token}"),
             ParseError::UnexpectedEof => write!(f, "Unexpected end of input"),
             ParseError::MismatchedParentheses => write!(f, "Mismatched parentheses"),
             ParseError::InvalidExpression => write!(f, "Invalid expression"),
@@ -72,7 +72,7 @@ impl fmt::Display for EvalError {
         match self {
             EvalError::DivisionByZero => write!(f, "Division by zero"),
             EvalError::Overflow => write!(f, "Arithmetic overflow"),
-            EvalError::TypeError(msg) => write!(f, "Type error: {}", msg),
+            EvalError::TypeError(msg) => write!(f, "Type error: {msg}"),
             EvalError::StackOverflow => write!(f, "Stack overflow"),
         }
     }
@@ -104,8 +104,8 @@ impl From<EvalError> for SobaError {
 impl From<LexError> for ParseError {
     fn from(err: LexError) -> Self {
         match err {
-            LexError::InvalidNumber(s) => ParseError::UnexpectedToken(format!("invalid number: {}", s)),
-            LexError::UnexpectedCharacter(c) => ParseError::UnexpectedToken(format!("unexpected character: '{}'", c)),
+            LexError::InvalidNumber(s) => ParseError::UnexpectedToken(format!("invalid number: {s}")),
+            LexError::UnexpectedCharacter(c) => ParseError::UnexpectedToken(format!("unexpected character: '{c}'")),
             LexError::UnterminatedString => ParseError::UnexpectedToken("unterminated string".to_string()),
         }
     }

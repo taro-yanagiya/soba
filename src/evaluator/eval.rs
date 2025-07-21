@@ -15,9 +15,9 @@ pub fn eval_expr(expr: &Expr) -> EvalResult<Value> {
             let right_val = eval_expr(right)?;
             
             match op {
-                BinaryOp::Plus => left_val.add(right_val),
-                BinaryOp::Minus => left_val.subtract(right_val),
-                BinaryOp::Multiply => left_val.multiply(right_val),
+                BinaryOp::Plus => left_val.add_value(right_val),
+                BinaryOp::Minus => left_val.subtract_value(right_val),
+                BinaryOp::Multiply => left_val.multiply_value(right_val),
             }
         }
         

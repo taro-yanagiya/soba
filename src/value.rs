@@ -50,22 +50,22 @@ impl Value {
     }
 
     // Arithmetic operations
-    pub fn add(self, other: Value) -> EvalResult<Value> {
+    pub fn add_value(self, other: Value) -> EvalResult<Value> {
         let result = self.as_f64() + other.as_f64();
         Ok(Value::Float(result))
     }
 
-    pub fn subtract(self, other: Value) -> EvalResult<Value> {
+    pub fn subtract_value(self, other: Value) -> EvalResult<Value> {
         let result = self.as_f64() - other.as_f64();
         Ok(Value::Float(result))
     }
 
-    pub fn multiply(self, other: Value) -> EvalResult<Value> {
+    pub fn multiply_value(self, other: Value) -> EvalResult<Value> {
         let result = self.as_f64() * other.as_f64();
         Ok(Value::Float(result))
     }
 
-    pub fn divide(self, other: Value) -> EvalResult<Value> {
+    pub fn divide_value(self, other: Value) -> EvalResult<Value> {
         let other_val = other.as_f64();
         if other_val == 0.0 {
             Err(EvalError::DivisionByZero)
@@ -94,13 +94,13 @@ impl Value {
 impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Value::Int(i) => write!(f, "{}", i),
+            Value::Int(i) => write!(f, "{i}"),
             Value::Float(fl) => {
                 // Display integers as integers even when they're floats
                 if fl.fract() == 0.0 && *fl >= i32::MIN as f64 && *fl <= i32::MAX as f64 {
                     write!(f, "{}", *fl as i64)
                 } else {
-                    write!(f, "{}", fl)
+                    write!(f, "{fl}")
                 }
             }
         }
@@ -128,17 +128,17 @@ mod tests {
         let a = Value::Int(5);
         let b = Value::Float(2.5);
 
-        assert_eq!(a.clone().add(b.clone()).unwrap(), Value::Float(7.5));
-        assert_eq!(a.clone().subtract(b.clone()).unwrap(), Value::Float(2.5));
-        assert_eq!(a.clone().multiply(b.clone()).unwrap(), Value::Float(12.5));
-        assert_eq!(a.clone().divide(b.clone()).unwrap(), Value::Float(2.0));
+        assert_eq!(a.clone().add_value(b.clone()).unwrap(), Value::Float(7.5));
+        assert_eq!(a.clone().subtract_value(b.clone()).unwrap(), Value::Float(2.5));
+        assert_eq!(a.clone().multiply_value(b.clone()).unwrap(), Value::Float(12.5));
+        assert_eq!(a.clone().divide_value(b.clone()).unwrap(), Value::Float(2.0));
     }
 
     #[test]
     fn test_division_by_zero() {
         let a = Value::Int(5);
         let b = Value::Int(0);
-        assert!(matches!(a.divide(b), Err(EvalError::DivisionByZero)));
+        assert!(matches!(a.divide_value(b), Err(EvalError::DivisionByZero)));
     }
 
     #[test]

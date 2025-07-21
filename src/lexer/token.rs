@@ -46,8 +46,8 @@ impl Token {
 impl std::fmt::Display for TokenKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TokenKind::Int(i) => write!(f, "{}", i),
-            TokenKind::Float(fl) => write!(f, "{}", fl),
+            TokenKind::Int(i) => write!(f, "{i}"),
+            TokenKind::Float(fl) => write!(f, "{fl}"),
             TokenKind::Plus => write!(f, "+"),
             TokenKind::Minus => write!(f, "-"),
             TokenKind::Asterisk => write!(f, "*"),

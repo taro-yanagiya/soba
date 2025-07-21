@@ -33,10 +33,10 @@ fn main() -> rustyline::Result<()> {
                 
                 match eval_string(&line) {
                     Ok(result) => {
-                        println!("{}", result);
+                        println!("{result}");
                     }
                     Err(err) => {
-                        println!("{}", err);
+                        println!("{err}");
                     }
                 }
             }
@@ -47,7 +47,7 @@ fn main() -> rustyline::Result<()> {
                 break;
             }
             Err(err) => {
-                println!("Error: {:?}", err);
+                println!("Error: {err:?}");
                 break;
             }
         }
