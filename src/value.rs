@@ -95,6 +95,27 @@ impl Value {
     pub fn positive(self) -> EvalResult<Value> {
         Ok(self)
     }
+
+    // Logical operations
+    pub fn logical_not(self) -> EvalResult<Value> {
+        Ok(Value::Bool(!self.is_truthy()))
+    }
+
+    pub fn logical_and(self, other: Value) -> EvalResult<Value> {
+        if !self.is_truthy() {
+            Ok(Value::Bool(false))
+        } else {
+            Ok(Value::Bool(other.is_truthy()))
+        }
+    }
+
+    pub fn logical_or(self, other: Value) -> EvalResult<Value> {
+        if self.is_truthy() {
+            Ok(Value::Bool(true))
+        } else {
+            Ok(Value::Bool(other.is_truthy()))
+        }
+    }
 }
 
 impl fmt::Display for Value {
@@ -159,5 +180,46 @@ mod tests {
         assert_eq!(Value::Int(42).to_string(), "42");
         assert_eq!(Value::Float(3.14).to_string(), "3.14");
         assert_eq!(Value::Float(5.0).to_string(), "5");
+    }
+
+    #[test]
+    fn test_logical_not() {
+        assert_eq!(Value::Bool(true).logical_not().unwrap(), Value::Bool(false));
+        assert_eq!(Value::Bool(false).logical_not().unwrap(), Value::Bool(true));
+        assert_eq!(Value::Int(0).logical_not().unwrap(), Value::Bool(true));
+        assert_eq!(Value::Int(5).logical_not().unwrap(), Value::Bool(false));
+    }
+
+    #[test]
+    fn test_logical_and() {
+        assert_eq!(Value::Bool(true).logical_and(Value::Bool(true)).unwrap(), Value::Bool(true));
+        assert_eq!(Value::Bool(true).logical_and(Value::Bool(false)).unwrap(), Value::Bool(false));
+        assert_eq!(Value::Bool(false).logical_and(Value::Bool(true)).unwrap(), Value::Bool(false));
+        assert_eq!(Value::Bool(false).logical_and(Value::Bool(false)).unwrap(), Value::Bool(false));
+    }
+
+    #[test]
+    fn test_logical_or() {
+        assert_eq!(Value::Bool(true).logical_or(Value::Bool(true)).unwrap(), Value::Bool(true));
+        assert_eq!(Value::Bool(true).logical_or(Value::Bool(false)).unwrap(), Value::Bool(true));
+        assert_eq!(Value::Bool(false).logical_or(Value::Bool(true)).unwrap(), Value::Bool(true));
+        assert_eq!(Value::Bool(false).logical_or(Value::Bool(false)).unwrap(), Value::Bool(false));
+    }
+
+    #[test]
+    fn test_is_truthy() {
+        // Boolean values
+        assert!(Value::Bool(true).is_truthy());
+        assert!(!Value::Bool(false).is_truthy());
+        
+        // Integer values
+        assert!(Value::Int(1).is_truthy());
+        assert!(Value::Int(-1).is_truthy());
+        assert!(!Value::Int(0).is_truthy());
+        
+        // Float values
+        assert!(Value::Float(1.0).is_truthy());
+        assert!(Value::Float(-1.0).is_truthy());
+        assert!(!Value::Float(0.0).is_truthy());
     }
 }

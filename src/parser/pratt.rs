@@ -78,7 +78,7 @@ impl<L: Lexer> Parser<L> {
                     })
                 }
                 TokenKind::LeftParen => self.parse_grouped_expression(),
-                TokenKind::Plus | TokenKind::Minus => self.parse_unary_expression(),
+                TokenKind::Plus | TokenKind::Minus | TokenKind::Bang => self.parse_unary_expression(),
                 _ => Err(ParseError::UnexpectedToken(token.to_string())),
             },
             None => Err(ParseError::UnexpectedEof),
@@ -93,6 +93,8 @@ impl<L: Lexer> Parser<L> {
                     TokenKind::Minus => BinaryOp::Minus,
                     TokenKind::Asterisk => BinaryOp::Multiply,
                     TokenKind::Slash => BinaryOp::Divide,
+                    TokenKind::AndAnd => BinaryOp::LogicalAnd,
+                    TokenKind::OrOr => BinaryOp::LogicalOr,
                     _ => return Err(ParseError::UnexpectedToken(token.to_string())),
                 };
 
@@ -140,6 +142,7 @@ impl<L: Lexer> Parser<L> {
         let op = match token.kind {
             TokenKind::Plus => UnaryOp::Plus,
             TokenKind::Minus => UnaryOp::Minus,
+            TokenKind::Bang => UnaryOp::LogicalNot,
             _ => return Err(ParseError::UnexpectedToken(token.to_string())),
         };
 
@@ -239,5 +242,36 @@ mod tests {
     fn test_parse_boolean_false() {
         let expr = parse_string("false").unwrap();
         assert!(matches!(expr, Expr::Bool { value: false, .. }));
+    }
+
+    #[test]
+    fn test_parse_logical_not() {
+        let expr = parse_string("!true").unwrap();
+        assert!(matches!(expr, Expr::UnaryExpr { op: UnaryOp::LogicalNot, .. }));
+    }
+
+    #[test]
+    fn test_parse_logical_and() {
+        let expr = parse_string("true && false").unwrap();
+        assert!(matches!(expr, Expr::InfixExpr { op: BinaryOp::LogicalAnd, .. }));
+    }
+
+    #[test]
+    fn test_parse_logical_or() {
+        let expr = parse_string("true || false").unwrap();
+        assert!(matches!(expr, Expr::InfixExpr { op: BinaryOp::LogicalOr, .. }));
+    }
+
+    #[test]
+    fn test_parse_logical_precedence() {
+        // true || false && true should parse as true || (false && true)
+        let expr = parse_string("true || false && true").unwrap();
+        if let Expr::InfixExpr { left, op, right, .. } = expr {
+            assert_eq!(op, BinaryOp::LogicalOr);
+            assert!(matches!(left.as_ref(), Expr::Bool { value: true, .. }));
+            assert!(matches!(right.as_ref(), Expr::InfixExpr { op: BinaryOp::LogicalAnd, .. }));
+        } else {
+            panic!("Expected infix expression");
+        }
     }
 }

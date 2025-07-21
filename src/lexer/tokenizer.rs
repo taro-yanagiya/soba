@@ -122,6 +122,23 @@ impl SobaLexer {
 
         Ok(Token::new(kind, span))
     }
+
+    fn read_two_char_token(&mut self, first_char: char, second_char: char, kind: TokenKind) -> LexResult<Token> {
+        let start_pos = self.position;
+        
+        // Consume first character
+        self.advance();
+        
+        // Check if second character matches
+        if self.current_char() == Some(second_char) {
+            self.advance(); // consume second character
+            let end_pos = self.position;
+            Ok(Token::new(kind, Span::new(start_pos, end_pos)))
+        } else {
+            // If second character doesn't match, it's an unexpected character
+            Err(LexError::UnexpectedCharacter(first_char))
+        }
+    }
 }
 
 impl Lexer for SobaLexer {
@@ -141,6 +158,9 @@ impl Lexer for SobaLexer {
                         '-' => self.read_single_char_token(TokenKind::Minus),
                         '*' => self.read_single_char_token(TokenKind::Asterisk),
                         '/' => self.read_single_char_token(TokenKind::Slash),
+                        '!' => self.read_single_char_token(TokenKind::Bang),
+                        '&' => return self.read_two_char_token('&', '&', TokenKind::AndAnd).map(Some),
+                        '|' => return self.read_two_char_token('|', '|', TokenKind::OrOr).map(Some),
                         '(' => self.read_single_char_token(TokenKind::LeftParen),
                         ')' => self.read_single_char_token(TokenKind::RightParen),
                         _ => return Err(LexError::UnexpectedCharacter(ch)),
@@ -238,5 +258,44 @@ mod tests {
         let tokens = tokenize("false").unwrap();
         assert_eq!(tokens.len(), 1);
         assert_eq!(tokens[0].kind, TokenKind::False);
+    }
+
+    #[test]
+    fn test_logical_operators() {
+        let tokens = tokenize("!").unwrap();
+        assert_eq!(tokens.len(), 1);
+        assert_eq!(tokens[0].kind, TokenKind::Bang);
+
+        let tokens = tokenize("&&").unwrap();
+        assert_eq!(tokens.len(), 1);
+        assert_eq!(tokens[0].kind, TokenKind::AndAnd);
+
+        let tokens = tokenize("||").unwrap();
+        assert_eq!(tokens.len(), 1);
+        assert_eq!(tokens[0].kind, TokenKind::OrOr);
+    }
+
+    #[test]
+    fn test_logical_expression() {
+        let tokens = tokenize("!true && false || true").unwrap();
+        assert_eq!(tokens.len(), 6);
+        assert_eq!(tokens[0].kind, TokenKind::Bang);
+        assert_eq!(tokens[1].kind, TokenKind::True);
+        assert_eq!(tokens[2].kind, TokenKind::AndAnd);
+        assert_eq!(tokens[3].kind, TokenKind::False);
+        assert_eq!(tokens[4].kind, TokenKind::OrOr);
+        assert_eq!(tokens[5].kind, TokenKind::True);
+    }
+
+    #[test]
+    fn test_invalid_single_ampersand() {
+        let result = tokenize("&");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_invalid_single_pipe() {
+        let result = tokenize("|");
+        assert!(result.is_err());
     }
 }

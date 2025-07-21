@@ -12,14 +12,39 @@ pub fn eval_expr(expr: &Expr) -> EvalResult<Value> {
         Expr::Bool { value, .. } => Ok(Value::Bool(*value)),
         
         Expr::InfixExpr { left, op, right, .. } => {
-            let left_val = eval_expr(left)?;
-            let right_val = eval_expr(right)?;
-            
             match op {
-                BinaryOp::Plus => left_val.add_value(right_val),
-                BinaryOp::Minus => left_val.subtract_value(right_val),
-                BinaryOp::Multiply => left_val.multiply_value(right_val),
-                BinaryOp::Divide => left_val.divide_value(right_val),
+                // Arithmetic operations - evaluate both sides
+                BinaryOp::Plus | BinaryOp::Minus | BinaryOp::Multiply | BinaryOp::Divide => {
+                    let left_val = eval_expr(left)?;
+                    let right_val = eval_expr(right)?;
+                    
+                    match op {
+                        BinaryOp::Plus => left_val.add_value(right_val),
+                        BinaryOp::Minus => left_val.subtract_value(right_val),
+                        BinaryOp::Multiply => left_val.multiply_value(right_val),
+                        BinaryOp::Divide => left_val.divide_value(right_val),
+                        _ => unreachable!(),
+                    }
+                }
+                // Logical operations - short-circuit evaluation
+                BinaryOp::LogicalAnd => {
+                    let left_val = eval_expr(left)?;
+                    if !left_val.is_truthy() {
+                        Ok(Value::Bool(false))
+                    } else {
+                        let right_val = eval_expr(right)?;
+                        left_val.logical_and(right_val)
+                    }
+                }
+                BinaryOp::LogicalOr => {
+                    let left_val = eval_expr(left)?;
+                    if left_val.is_truthy() {
+                        Ok(Value::Bool(true))
+                    } else {
+                        let right_val = eval_expr(right)?;
+                        left_val.logical_or(right_val)
+                    }
+                }
             }
         }
         
@@ -30,6 +55,7 @@ pub fn eval_expr(expr: &Expr) -> EvalResult<Value> {
             match op {
                 UnaryOp::Plus => val.positive(),
                 UnaryOp::Minus => val.negate(),
+                UnaryOp::LogicalNot => val.logical_not(),
             }
         }
     }
@@ -117,6 +143,75 @@ mod tests {
     #[test]
     fn test_eval_boolean_false() {
         let expr = Expr::bool(false);
+        assert_eq!(eval_expr(&expr).unwrap(), Value::Bool(false));
+    }
+
+    #[test]
+    fn test_eval_logical_not() {
+        use crate::span::{Position, Span};
+        
+        let expr = Expr::UnaryExpr {
+            op: UnaryOp::LogicalNot,
+            operand: Box::new(Expr::bool(true)),
+            span: Span::single(Position::start()),
+        };
+        
+        assert_eq!(eval_expr(&expr).unwrap(), Value::Bool(false));
+    }
+
+    #[test]
+    fn test_eval_logical_and_true() {
+        use crate::span::{Position, Span};
+        
+        let expr = Expr::InfixExpr {
+            left: Box::new(Expr::bool(true)),
+            op: BinaryOp::LogicalAnd,
+            right: Box::new(Expr::bool(true)),
+            span: Span::single(Position::start()),
+        };
+        
+        assert_eq!(eval_expr(&expr).unwrap(), Value::Bool(true));
+    }
+
+    #[test]
+    fn test_eval_logical_and_false() {
+        use crate::span::{Position, Span};
+        
+        let expr = Expr::InfixExpr {
+            left: Box::new(Expr::bool(false)),
+            op: BinaryOp::LogicalAnd,
+            right: Box::new(Expr::bool(true)),
+            span: Span::single(Position::start()),
+        };
+        
+        assert_eq!(eval_expr(&expr).unwrap(), Value::Bool(false));
+    }
+
+    #[test]
+    fn test_eval_logical_or_true() {
+        use crate::span::{Position, Span};
+        
+        let expr = Expr::InfixExpr {
+            left: Box::new(Expr::bool(true)),
+            op: BinaryOp::LogicalOr,
+            right: Box::new(Expr::bool(false)),
+            span: Span::single(Position::start()),
+        };
+        
+        assert_eq!(eval_expr(&expr).unwrap(), Value::Bool(true));
+    }
+
+    #[test]
+    fn test_eval_logical_or_false() {
+        use crate::span::{Position, Span};
+        
+        let expr = Expr::InfixExpr {
+            left: Box::new(Expr::bool(false)),
+            op: BinaryOp::LogicalOr,
+            right: Box::new(Expr::bool(false)),
+            span: Span::single(Position::start()),
+        };
+        
         assert_eq!(eval_expr(&expr).unwrap(), Value::Bool(false));
     }
 }

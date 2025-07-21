@@ -47,6 +47,8 @@ pub enum BinaryOp {
     Minus,
     Multiply,
     Divide,
+    LogicalAnd,
+    LogicalOr,
     // Future: Modulo, Equal, NotEqual, Less, Greater, etc.
 }
 
@@ -55,7 +57,8 @@ pub enum BinaryOp {
 pub enum UnaryOp {
     Plus,
     Minus,
-    // Future: Not
+    LogicalNot,
+    // Future: other unary operators
 }
 
 impl Expr {
@@ -103,6 +106,8 @@ impl std::fmt::Display for BinaryOp {
             BinaryOp::Minus => write!(f, "-"),
             BinaryOp::Multiply => write!(f, "*"),
             BinaryOp::Divide => write!(f, "/"),
+            BinaryOp::LogicalAnd => write!(f, "&&"),
+            BinaryOp::LogicalOr => write!(f, "||"),
         }
     }
 }
@@ -112,6 +117,7 @@ impl std::fmt::Display for UnaryOp {
         match self {
             UnaryOp::Plus => write!(f, "+"),
             UnaryOp::Minus => write!(f, "-"),
+            UnaryOp::LogicalNot => write!(f, "!"),
         }
     }
 }
