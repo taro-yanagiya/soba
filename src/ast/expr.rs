@@ -6,20 +6,11 @@ use crate::span::Span;
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expr {
     /// Integer literal
-    Int {
-        value: i32,
-        span: Span,
-    },
+    Int { value: i32, span: Span },
     /// Floating-point literal  
-    Float {
-        value: f64,
-        span: Span,
-    },
+    Float { value: f64, span: Span },
     /// Boolean literal
-    Bool {
-        value: bool,
-        span: Span,
-    },
+    Bool { value: bool, span: Span },
     /// Binary infix expression (e.g., 1 + 2)
     InfixExpr {
         left: Box<Expr>,
@@ -28,10 +19,7 @@ pub enum Expr {
         span: Span,
     },
     /// Grouped expression (e.g., (1 + 2))
-    Grouped {
-        inner: Box<Expr>,
-        span: Span,
-    },
+    Grouped { inner: Box<Expr>, span: Span },
     /// Unary expression (e.g., -1, +5)
     UnaryExpr {
         op: UnaryOp,

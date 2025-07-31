@@ -21,7 +21,12 @@ impl Precedence {
         match token {
             TokenKind::OrOr => Precedence::LogicalOr,
             TokenKind::AndAnd => Precedence::LogicalAnd,
-            TokenKind::Equal | TokenKind::NotEqual | TokenKind::Less | TokenKind::Greater | TokenKind::LessEqual | TokenKind::GreaterEqual => Precedence::Comparison,
+            TokenKind::Equal
+            | TokenKind::NotEqual
+            | TokenKind::Less
+            | TokenKind::Greater
+            | TokenKind::LessEqual
+            | TokenKind::GreaterEqual => Precedence::Comparison,
             TokenKind::Plus | TokenKind::Minus => Precedence::Sum,
             TokenKind::Asterisk | TokenKind::Slash => Precedence::Product,
             TokenKind::LeftParen => Precedence::Group,
@@ -75,19 +80,55 @@ mod tests {
 
     #[test]
     fn test_token_precedence() {
-        assert_eq!(Precedence::from_token(&TokenKind::OrOr), Precedence::LogicalOr);
-        assert_eq!(Precedence::from_token(&TokenKind::AndAnd), Precedence::LogicalAnd);
-        assert_eq!(Precedence::from_token(&TokenKind::Equal), Precedence::Comparison);
-        assert_eq!(Precedence::from_token(&TokenKind::NotEqual), Precedence::Comparison);
-        assert_eq!(Precedence::from_token(&TokenKind::Less), Precedence::Comparison);
-        assert_eq!(Precedence::from_token(&TokenKind::Greater), Precedence::Comparison);
-        assert_eq!(Precedence::from_token(&TokenKind::LessEqual), Precedence::Comparison);
-        assert_eq!(Precedence::from_token(&TokenKind::GreaterEqual), Precedence::Comparison);
+        assert_eq!(
+            Precedence::from_token(&TokenKind::OrOr),
+            Precedence::LogicalOr
+        );
+        assert_eq!(
+            Precedence::from_token(&TokenKind::AndAnd),
+            Precedence::LogicalAnd
+        );
+        assert_eq!(
+            Precedence::from_token(&TokenKind::Equal),
+            Precedence::Comparison
+        );
+        assert_eq!(
+            Precedence::from_token(&TokenKind::NotEqual),
+            Precedence::Comparison
+        );
+        assert_eq!(
+            Precedence::from_token(&TokenKind::Less),
+            Precedence::Comparison
+        );
+        assert_eq!(
+            Precedence::from_token(&TokenKind::Greater),
+            Precedence::Comparison
+        );
+        assert_eq!(
+            Precedence::from_token(&TokenKind::LessEqual),
+            Precedence::Comparison
+        );
+        assert_eq!(
+            Precedence::from_token(&TokenKind::GreaterEqual),
+            Precedence::Comparison
+        );
         assert_eq!(Precedence::from_token(&TokenKind::Plus), Precedence::Sum);
         assert_eq!(Precedence::from_token(&TokenKind::Minus), Precedence::Sum);
-        assert_eq!(Precedence::from_token(&TokenKind::Asterisk), Precedence::Product);
-        assert_eq!(Precedence::from_token(&TokenKind::Slash), Precedence::Product);
-        assert_eq!(Precedence::from_token(&TokenKind::LeftParen), Precedence::Group);
-        assert_eq!(Precedence::from_token(&TokenKind::Int(1)), Precedence::Lowest);
+        assert_eq!(
+            Precedence::from_token(&TokenKind::Asterisk),
+            Precedence::Product
+        );
+        assert_eq!(
+            Precedence::from_token(&TokenKind::Slash),
+            Precedence::Product
+        );
+        assert_eq!(
+            Precedence::from_token(&TokenKind::LeftParen),
+            Precedence::Group
+        );
+        assert_eq!(
+            Precedence::from_token(&TokenKind::Int(1)),
+            Precedence::Lowest
+        );
     }
 }

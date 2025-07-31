@@ -26,7 +26,13 @@ impl Value {
         match self {
             Value::Int(i) => *i as f64,
             Value::Float(f) => *f,
-            Value::Bool(b) => if *b { 1.0 } else { 0.0 },
+            Value::Bool(b) => {
+                if *b {
+                    1.0
+                } else {
+                    0.0
+                }
+            }
         }
     }
 
@@ -82,13 +88,11 @@ impl Value {
 
     pub fn negate(self) -> EvalResult<Value> {
         match self {
-            Value::Int(i) => {
-                i.checked_neg()
-                    .map(Value::Int)
-                    .ok_or(EvalError::Overflow)
-            }
+            Value::Int(i) => i.checked_neg().map(Value::Int).ok_or(EvalError::Overflow),
             Value::Float(f) => Ok(Value::Float(-f)),
-            Value::Bool(_) => Err(EvalError::TypeError("Cannot negate boolean value".to_string())),
+            Value::Bool(_) => Err(EvalError::TypeError(
+                "Cannot negate boolean value".to_string(),
+            )),
         }
     }
 
@@ -146,7 +150,11 @@ impl Value {
             (Value::Int(a), Value::Float(b)) => (a as f64) < b,
             (Value::Float(a), Value::Int(b)) => a < (b as f64),
             // Boolean comparison not allowed for ordering
-            _ => return Err(EvalError::TypeError("Cannot compare these types for ordering".to_string())),
+            _ => {
+                return Err(EvalError::TypeError(
+                    "Cannot compare these types for ordering".to_string(),
+                ))
+            }
         };
         Ok(Value::Bool(result))
     }
@@ -158,7 +166,11 @@ impl Value {
             (Value::Int(a), Value::Float(b)) => (a as f64) > b,
             (Value::Float(a), Value::Int(b)) => a > (b as f64),
             // Boolean comparison not allowed for ordering
-            _ => return Err(EvalError::TypeError("Cannot compare these types for ordering".to_string())),
+            _ => {
+                return Err(EvalError::TypeError(
+                    "Cannot compare these types for ordering".to_string(),
+                ))
+            }
         };
         Ok(Value::Bool(result))
     }
@@ -170,7 +182,11 @@ impl Value {
             (Value::Int(a), Value::Float(b)) => (a as f64) <= b,
             (Value::Float(a), Value::Int(b)) => a <= (b as f64),
             // Boolean comparison not allowed for ordering
-            _ => return Err(EvalError::TypeError("Cannot compare these types for ordering".to_string())),
+            _ => {
+                return Err(EvalError::TypeError(
+                    "Cannot compare these types for ordering".to_string(),
+                ))
+            }
         };
         Ok(Value::Bool(result))
     }
@@ -182,7 +198,11 @@ impl Value {
             (Value::Int(a), Value::Float(b)) => (a as f64) >= b,
             (Value::Float(a), Value::Int(b)) => a >= (b as f64),
             // Boolean comparison not allowed for ordering
-            _ => return Err(EvalError::TypeError("Cannot compare these types for ordering".to_string())),
+            _ => {
+                return Err(EvalError::TypeError(
+                    "Cannot compare these types for ordering".to_string(),
+                ))
+            }
         };
         Ok(Value::Bool(result))
     }
@@ -233,9 +253,18 @@ mod tests {
         let b = Value::Float(2.5);
 
         assert_eq!(a.clone().add_value(b.clone()).unwrap(), Value::Float(7.5));
-        assert_eq!(a.clone().subtract_value(b.clone()).unwrap(), Value::Float(2.5));
-        assert_eq!(a.clone().multiply_value(b.clone()).unwrap(), Value::Float(12.5));
-        assert_eq!(a.clone().divide_value(b.clone()).unwrap(), Value::Float(2.0));
+        assert_eq!(
+            a.clone().subtract_value(b.clone()).unwrap(),
+            Value::Float(2.5)
+        );
+        assert_eq!(
+            a.clone().multiply_value(b.clone()).unwrap(),
+            Value::Float(12.5)
+        );
+        assert_eq!(
+            a.clone().divide_value(b.clone()).unwrap(),
+            Value::Float(2.0)
+        );
     }
 
     #[test]
@@ -262,18 +291,42 @@ mod tests {
 
     #[test]
     fn test_logical_and() {
-        assert_eq!(Value::Bool(true).logical_and(Value::Bool(true)).unwrap(), Value::Bool(true));
-        assert_eq!(Value::Bool(true).logical_and(Value::Bool(false)).unwrap(), Value::Bool(false));
-        assert_eq!(Value::Bool(false).logical_and(Value::Bool(true)).unwrap(), Value::Bool(false));
-        assert_eq!(Value::Bool(false).logical_and(Value::Bool(false)).unwrap(), Value::Bool(false));
+        assert_eq!(
+            Value::Bool(true).logical_and(Value::Bool(true)).unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            Value::Bool(true).logical_and(Value::Bool(false)).unwrap(),
+            Value::Bool(false)
+        );
+        assert_eq!(
+            Value::Bool(false).logical_and(Value::Bool(true)).unwrap(),
+            Value::Bool(false)
+        );
+        assert_eq!(
+            Value::Bool(false).logical_and(Value::Bool(false)).unwrap(),
+            Value::Bool(false)
+        );
     }
 
     #[test]
     fn test_logical_or() {
-        assert_eq!(Value::Bool(true).logical_or(Value::Bool(true)).unwrap(), Value::Bool(true));
-        assert_eq!(Value::Bool(true).logical_or(Value::Bool(false)).unwrap(), Value::Bool(true));
-        assert_eq!(Value::Bool(false).logical_or(Value::Bool(true)).unwrap(), Value::Bool(true));
-        assert_eq!(Value::Bool(false).logical_or(Value::Bool(false)).unwrap(), Value::Bool(false));
+        assert_eq!(
+            Value::Bool(true).logical_or(Value::Bool(true)).unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            Value::Bool(true).logical_or(Value::Bool(false)).unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            Value::Bool(false).logical_or(Value::Bool(true)).unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            Value::Bool(false).logical_or(Value::Bool(false)).unwrap(),
+            Value::Bool(false)
+        );
     }
 
     #[test]
@@ -281,12 +334,12 @@ mod tests {
         // Boolean values
         assert!(Value::Bool(true).is_truthy());
         assert!(!Value::Bool(false).is_truthy());
-        
+
         // Integer values
         assert!(Value::Int(1).is_truthy());
         assert!(Value::Int(-1).is_truthy());
         assert!(!Value::Int(0).is_truthy());
-        
+
         // Float values
         assert!(Value::Float(1.0).is_truthy());
         assert!(Value::Float(-1.0).is_truthy());
@@ -296,55 +349,130 @@ mod tests {
     #[test]
     fn test_equal_to() {
         // Same types
-        assert_eq!(Value::Int(5).equal_to(Value::Int(5)).unwrap(), Value::Bool(true));
-        assert_eq!(Value::Int(5).equal_to(Value::Int(3)).unwrap(), Value::Bool(false));
-        assert_eq!(Value::Float(3.14).equal_to(Value::Float(3.14)).unwrap(), Value::Bool(true));
-        assert_eq!(Value::Bool(true).equal_to(Value::Bool(true)).unwrap(), Value::Bool(true));
-        assert_eq!(Value::Bool(true).equal_to(Value::Bool(false)).unwrap(), Value::Bool(false));
-        
+        assert_eq!(
+            Value::Int(5).equal_to(Value::Int(5)).unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            Value::Int(5).equal_to(Value::Int(3)).unwrap(),
+            Value::Bool(false)
+        );
+        assert_eq!(
+            Value::Float(3.14).equal_to(Value::Float(3.14)).unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            Value::Bool(true).equal_to(Value::Bool(true)).unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            Value::Bool(true).equal_to(Value::Bool(false)).unwrap(),
+            Value::Bool(false)
+        );
+
         // Mixed numeric types
-        assert_eq!(Value::Int(5).equal_to(Value::Float(5.0)).unwrap(), Value::Bool(true));
-        assert_eq!(Value::Float(5.0).equal_to(Value::Int(5)).unwrap(), Value::Bool(true));
-        assert_eq!(Value::Int(5).equal_to(Value::Float(5.1)).unwrap(), Value::Bool(false));
-        
+        assert_eq!(
+            Value::Int(5).equal_to(Value::Float(5.0)).unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            Value::Float(5.0).equal_to(Value::Int(5)).unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            Value::Int(5).equal_to(Value::Float(5.1)).unwrap(),
+            Value::Bool(false)
+        );
+
         // Different types
-        assert_eq!(Value::Int(1).equal_to(Value::Bool(true)).unwrap(), Value::Bool(false));
+        assert_eq!(
+            Value::Int(1).equal_to(Value::Bool(true)).unwrap(),
+            Value::Bool(false)
+        );
     }
 
     #[test]
     fn test_not_equal_to() {
-        assert_eq!(Value::Int(5).not_equal_to(Value::Int(3)).unwrap(), Value::Bool(true));
-        assert_eq!(Value::Int(5).not_equal_to(Value::Int(5)).unwrap(), Value::Bool(false));
+        assert_eq!(
+            Value::Int(5).not_equal_to(Value::Int(3)).unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            Value::Int(5).not_equal_to(Value::Int(5)).unwrap(),
+            Value::Bool(false)
+        );
     }
 
     #[test]
     fn test_less_than() {
-        assert_eq!(Value::Int(3).less_than(Value::Int(5)).unwrap(), Value::Bool(true));
-        assert_eq!(Value::Int(5).less_than(Value::Int(3)).unwrap(), Value::Bool(false));
-        assert_eq!(Value::Float(3.5).less_than(Value::Float(5.5)).unwrap(), Value::Bool(true));
-        assert_eq!(Value::Int(3).less_than(Value::Float(3.5)).unwrap(), Value::Bool(true));
-        assert_eq!(Value::Float(3.5).less_than(Value::Int(5)).unwrap(), Value::Bool(true));
+        assert_eq!(
+            Value::Int(3).less_than(Value::Int(5)).unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            Value::Int(5).less_than(Value::Int(3)).unwrap(),
+            Value::Bool(false)
+        );
+        assert_eq!(
+            Value::Float(3.5).less_than(Value::Float(5.5)).unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            Value::Int(3).less_than(Value::Float(3.5)).unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            Value::Float(3.5).less_than(Value::Int(5)).unwrap(),
+            Value::Bool(true)
+        );
     }
 
     #[test]
     fn test_greater_than() {
-        assert_eq!(Value::Int(5).greater_than(Value::Int(3)).unwrap(), Value::Bool(true));
-        assert_eq!(Value::Int(3).greater_than(Value::Int(5)).unwrap(), Value::Bool(false));
-        assert_eq!(Value::Float(5.5).greater_than(Value::Float(3.5)).unwrap(), Value::Bool(true));
+        assert_eq!(
+            Value::Int(5).greater_than(Value::Int(3)).unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            Value::Int(3).greater_than(Value::Int(5)).unwrap(),
+            Value::Bool(false)
+        );
+        assert_eq!(
+            Value::Float(5.5).greater_than(Value::Float(3.5)).unwrap(),
+            Value::Bool(true)
+        );
     }
 
     #[test]
     fn test_less_equal() {
-        assert_eq!(Value::Int(3).less_equal(Value::Int(5)).unwrap(), Value::Bool(true));
-        assert_eq!(Value::Int(5).less_equal(Value::Int(5)).unwrap(), Value::Bool(true));
-        assert_eq!(Value::Int(7).less_equal(Value::Int(5)).unwrap(), Value::Bool(false));
+        assert_eq!(
+            Value::Int(3).less_equal(Value::Int(5)).unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            Value::Int(5).less_equal(Value::Int(5)).unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            Value::Int(7).less_equal(Value::Int(5)).unwrap(),
+            Value::Bool(false)
+        );
     }
 
     #[test]
     fn test_greater_equal() {
-        assert_eq!(Value::Int(5).greater_equal(Value::Int(3)).unwrap(), Value::Bool(true));
-        assert_eq!(Value::Int(5).greater_equal(Value::Int(5)).unwrap(), Value::Bool(true));
-        assert_eq!(Value::Int(3).greater_equal(Value::Int(5)).unwrap(), Value::Bool(false));
+        assert_eq!(
+            Value::Int(5).greater_equal(Value::Int(3)).unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            Value::Int(5).greater_equal(Value::Int(5)).unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            Value::Int(3).greater_equal(Value::Int(5)).unwrap(),
+            Value::Bool(false)
+        );
     }
 
     #[test]

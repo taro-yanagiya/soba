@@ -17,28 +17,28 @@ pub enum TokenKind {
     Float(f64),
     True,
     False,
-    
+
     // Operators
     Plus,
     Minus,
     Asterisk,
     Slash,
-    Bang,        // !
-    AndAnd,      // &&
-    OrOr,        // ||
-    
+    Bang,   // !
+    AndAnd, // &&
+    OrOr,   // ||
+
     // Comparison operators
-    Equal,       // ==
-    NotEqual,    // !=
-    Less,        // <
-    Greater,     // >
-    LessEqual,   // <=
+    Equal,        // ==
+    NotEqual,     // !=
+    Less,         // <
+    Greater,      // >
+    LessEqual,    // <=
     GreaterEqual, // >=
-    
+
     // Delimiters
     LeftParen,
     RightParen,
-    
+
     // Special
     Eof,
 }

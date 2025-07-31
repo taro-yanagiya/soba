@@ -104,9 +104,15 @@ impl From<EvalError> for SobaError {
 impl From<LexError> for ParseError {
     fn from(err: LexError) -> Self {
         match err {
-            LexError::InvalidNumber(s) => ParseError::UnexpectedToken(format!("invalid number: {s}")),
-            LexError::UnexpectedCharacter(c) => ParseError::UnexpectedToken(format!("unexpected character: '{c}'")),
-            LexError::UnterminatedString => ParseError::UnexpectedToken("unterminated string".to_string()),
+            LexError::InvalidNumber(s) => {
+                ParseError::UnexpectedToken(format!("invalid number: {s}"))
+            }
+            LexError::UnexpectedCharacter(c) => {
+                ParseError::UnexpectedToken(format!("unexpected character: '{c}'"))
+            }
+            LexError::UnterminatedString => {
+                ParseError::UnexpectedToken("unterminated string".to_string())
+            }
         }
     }
 }

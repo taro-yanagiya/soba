@@ -1,27 +1,27 @@
 //! Soba Programming Language
 
-pub mod error;
-pub mod span;
-pub mod value;
 pub mod ast;
+pub mod error;
+pub mod evaluator;
 pub mod lexer;
 pub mod parser;
-pub mod evaluator;
+pub mod span;
+pub mod value;
 
 // Re-export commonly used types
-pub use error::{SobaError, SobaResult, LexError, ParseError, EvalError};
+pub use ast::{BinaryOp, Expr, UnaryOp};
+pub use error::{EvalError, LexError, ParseError, SobaError, SobaResult};
+pub use evaluator::eval_expr;
+pub use lexer::{Lexer, SobaLexer, Token, TokenKind};
+pub use parser::{Parser, Precedence};
 pub use span::{Position, Span};
 pub use value::Value;
-pub use ast::{Expr, BinaryOp, UnaryOp};
-pub use lexer::{Token, TokenKind, SobaLexer, Lexer};
-pub use parser::{Parser, Precedence};
-pub use evaluator::eval_expr;
 
 /// Evaluate a string expression and return the result
 pub fn eval_string(input: &str) -> SobaResult<Value> {
     let lexer = SobaLexer::new(input.chars().collect());
     let mut parser = Parser::new(lexer).map_err(SobaError::ParseError)?;
-    
+
     let expr = parser.parse().map_err(SobaError::ParseError)?;
     eval_expr(&expr).map_err(SobaError::EvalError)
 }

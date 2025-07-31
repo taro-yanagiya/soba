@@ -13,11 +13,19 @@ pub struct Position {
 
 impl Position {
     pub fn new(offset: usize, line: usize, column: usize) -> Self {
-        Self { offset, line, column }
+        Self {
+            offset,
+            line,
+            column,
+        }
     }
 
     pub fn start() -> Self {
-        Self { offset: 0, line: 1, column: 1 }
+        Self {
+            offset: 0,
+            line: 1,
+            column: 1,
+        }
     }
 
     pub fn advance(&mut self, ch: char) {
@@ -46,7 +54,10 @@ impl Span {
     }
 
     pub fn single(pos: Position) -> Self {
-        Self { start: pos, end: pos }
+        Self {
+            start: pos,
+            end: pos,
+        }
     }
 
     pub fn merge(self, other: Span) -> Span {
@@ -74,7 +85,11 @@ impl std::fmt::Display for Position {
 impl std::fmt::Display for Span {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.start.line == self.end.line {
-            write!(f, "{}:{}-{}", self.start.line, self.start.column, self.end.column)
+            write!(
+                f,
+                "{}:{}-{}",
+                self.start.line, self.start.column, self.end.column
+            )
         } else {
             write!(f, "{}-{}", self.start, self.end)
         }

@@ -4,4 +4,4 @@
 
 pub mod expr;
 
-pub use expr::{Expr, BinaryOp, UnaryOp};
+pub use expr::{BinaryOp, Expr, UnaryOp};

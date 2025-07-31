@@ -1,9 +1,9 @@
 //! Parser implementation using Pratt parsing
 
-use crate::ast::{Expr, BinaryOp, UnaryOp};
+use super::precedence::Precedence;
+use crate::ast::{BinaryOp, Expr, UnaryOp};
 use crate::error::{ParseError, ParseResult};
 use crate::lexer::{Lexer, Token, TokenKind};
-use super::precedence::Precedence;
 
 /// Soba language parser
 pub struct Parser<L: Lexer> {
@@ -16,7 +16,7 @@ impl<L: Lexer> Parser<L> {
     pub fn new(mut lexer: L) -> ParseResult<Self> {
         let current_token = lexer.next_token().map_err(ParseError::from)?;
         let peek_token = lexer.next_token().map_err(ParseError::from)?;
-        
+
         Ok(Parser {
             lexer,
             current_token,
@@ -53,32 +53,26 @@ impl<L: Lexer> Parser<L> {
     fn parse_prefix(&mut self) -> ParseResult<Expr> {
         match &self.current_token {
             Some(token) => match &token.kind {
-                TokenKind::Int(value) => {
-                    Ok(Expr::Int {
-                        value: *value,
-                        span: token.span,
-                    })
-                }
-                TokenKind::Float(value) => {
-                    Ok(Expr::Float {
-                        value: *value,
-                        span: token.span,
-                    })
-                }
-                TokenKind::True => {
-                    Ok(Expr::Bool {
-                        value: true,
-                        span: token.span,
-                    })
-                }
-                TokenKind::False => {
-                    Ok(Expr::Bool {
-                        value: false,
-                        span: token.span,
-                    })
-                }
+                TokenKind::Int(value) => Ok(Expr::Int {
+                    value: *value,
+                    span: token.span,
+                }),
+                TokenKind::Float(value) => Ok(Expr::Float {
+                    value: *value,
+                    span: token.span,
+                }),
+                TokenKind::True => Ok(Expr::Bool {
+                    value: true,
+                    span: token.span,
+                }),
+                TokenKind::False => Ok(Expr::Bool {
+                    value: false,
+                    span: token.span,
+                }),
                 TokenKind::LeftParen => self.parse_grouped_expression(),
-                TokenKind::Plus | TokenKind::Minus | TokenKind::Bang => self.parse_unary_expression(),
+                TokenKind::Plus | TokenKind::Minus | TokenKind::Bang => {
+                    self.parse_unary_expression()
+                }
                 _ => Err(ParseError::UnexpectedToken(token.to_string())),
             },
             None => Err(ParseError::UnexpectedEof),
@@ -106,12 +100,12 @@ impl<L: Lexer> Parser<L> {
 
                 let _op_span = token.span;
                 let precedence = Precedence::from_token(&token.kind);
-                
+
                 self.next_token()?;
                 let right = self.parse_expression(precedence)?;
-                
+
                 let span = left.span().merge(right.span());
-                
+
                 Ok(Expr::InfixExpr {
                     left: Box::new(left),
                     op,
@@ -125,18 +119,21 @@ impl<L: Lexer> Parser<L> {
 
     fn parse_grouped_expression(&mut self) -> ParseResult<Expr> {
         let start_span = self.current_token.as_ref().unwrap().span;
-        
+
         self.next_token()?; // consume '('
         let expr = self.parse_expression(Precedence::Lowest)?;
-        
-        if !matches!(self.peek_token.as_ref().map(|t| &t.kind), Some(TokenKind::RightParen)) {
+
+        if !matches!(
+            self.peek_token.as_ref().map(|t| &t.kind),
+            Some(TokenKind::RightParen)
+        ) {
             return Err(ParseError::MismatchedParentheses);
         }
-        
+
         self.next_token()?; // move to ')'
         let end_span = self.current_token.as_ref().unwrap().span;
         let span = start_span.merge(end_span);
-        
+
         Ok(Expr::Grouped {
             inner: Box::new(expr),
             span,
@@ -153,12 +150,12 @@ impl<L: Lexer> Parser<L> {
         };
 
         let op_span = token.span;
-        
+
         self.next_token()?;
         let operand = self.parse_expression(Precedence::Unary)?;
-        
+
         let span = op_span.merge(operand.span());
-        
+
         Ok(Expr::UnaryExpr {
             op,
             operand: Box::new(operand),
@@ -193,16 +190,31 @@ mod tests {
     #[test]
     fn test_parse_addition() {
         let expr = parse_string("1 + 2").unwrap();
-        assert!(matches!(expr, Expr::InfixExpr { op: BinaryOp::Plus, .. }));
+        assert!(matches!(
+            expr,
+            Expr::InfixExpr {
+                op: BinaryOp::Plus,
+                ..
+            }
+        ));
     }
 
     #[test]
     fn test_parse_precedence() {
         let expr = parse_string("1 + 2 * 3").unwrap();
-        if let Expr::InfixExpr { left, op, right, .. } = expr {
+        if let Expr::InfixExpr {
+            left, op, right, ..
+        } = expr
+        {
             assert_eq!(op, BinaryOp::Plus);
             assert!(matches!(left.as_ref(), Expr::Int { value: 1, .. }));
-            assert!(matches!(right.as_ref(), Expr::InfixExpr { op: BinaryOp::Multiply, .. }));
+            assert!(matches!(
+                right.as_ref(),
+                Expr::InfixExpr {
+                    op: BinaryOp::Multiply,
+                    ..
+                }
+            ));
         } else {
             panic!("Expected infix expression");
         }
@@ -217,22 +229,43 @@ mod tests {
     #[test]
     fn test_parse_unary() {
         let expr = parse_string("-5").unwrap();
-        assert!(matches!(expr, Expr::UnaryExpr { op: UnaryOp::Minus, .. }));
+        assert!(matches!(
+            expr,
+            Expr::UnaryExpr {
+                op: UnaryOp::Minus,
+                ..
+            }
+        ));
     }
 
     #[test]
     fn test_parse_division() {
         let expr = parse_string("8 / 2").unwrap();
-        assert!(matches!(expr, Expr::InfixExpr { op: BinaryOp::Divide, .. }));
+        assert!(matches!(
+            expr,
+            Expr::InfixExpr {
+                op: BinaryOp::Divide,
+                ..
+            }
+        ));
     }
 
     #[test]
     fn test_parse_division_precedence() {
         let expr = parse_string("2 + 8 / 4").unwrap();
-        if let Expr::InfixExpr { left, op, right, .. } = expr {
+        if let Expr::InfixExpr {
+            left, op, right, ..
+        } = expr
+        {
             assert_eq!(op, BinaryOp::Plus);
             assert!(matches!(left.as_ref(), Expr::Int { value: 2, .. }));
-            assert!(matches!(right.as_ref(), Expr::InfixExpr { op: BinaryOp::Divide, .. }));
+            assert!(matches!(
+                right.as_ref(),
+                Expr::InfixExpr {
+                    op: BinaryOp::Divide,
+                    ..
+                }
+            ));
         } else {
             panic!("Expected infix expression");
         }
@@ -253,29 +286,56 @@ mod tests {
     #[test]
     fn test_parse_logical_not() {
         let expr = parse_string("!true").unwrap();
-        assert!(matches!(expr, Expr::UnaryExpr { op: UnaryOp::LogicalNot, .. }));
+        assert!(matches!(
+            expr,
+            Expr::UnaryExpr {
+                op: UnaryOp::LogicalNot,
+                ..
+            }
+        ));
     }
 
     #[test]
     fn test_parse_logical_and() {
         let expr = parse_string("true && false").unwrap();
-        assert!(matches!(expr, Expr::InfixExpr { op: BinaryOp::LogicalAnd, .. }));
+        assert!(matches!(
+            expr,
+            Expr::InfixExpr {
+                op: BinaryOp::LogicalAnd,
+                ..
+            }
+        ));
     }
 
     #[test]
     fn test_parse_logical_or() {
         let expr = parse_string("true || false").unwrap();
-        assert!(matches!(expr, Expr::InfixExpr { op: BinaryOp::LogicalOr, .. }));
+        assert!(matches!(
+            expr,
+            Expr::InfixExpr {
+                op: BinaryOp::LogicalOr,
+                ..
+            }
+        ));
     }
 
     #[test]
     fn test_parse_logical_precedence() {
         // true || false && true should parse as true || (false && true)
         let expr = parse_string("true || false && true").unwrap();
-        if let Expr::InfixExpr { left, op, right, .. } = expr {
+        if let Expr::InfixExpr {
+            left, op, right, ..
+        } = expr
+        {
             assert_eq!(op, BinaryOp::LogicalOr);
             assert!(matches!(left.as_ref(), Expr::Bool { value: true, .. }));
-            assert!(matches!(right.as_ref(), Expr::InfixExpr { op: BinaryOp::LogicalAnd, .. }));
+            assert!(matches!(
+                right.as_ref(),
+                Expr::InfixExpr {
+                    op: BinaryOp::LogicalAnd,
+                    ..
+                }
+            ));
         } else {
             panic!("Expected infix expression");
         }
@@ -284,46 +344,91 @@ mod tests {
     #[test]
     fn test_parse_comparison_equal() {
         let expr = parse_string("5 == 5").unwrap();
-        assert!(matches!(expr, Expr::InfixExpr { op: BinaryOp::Equal, .. }));
+        assert!(matches!(
+            expr,
+            Expr::InfixExpr {
+                op: BinaryOp::Equal,
+                ..
+            }
+        ));
     }
 
     #[test]
     fn test_parse_comparison_not_equal() {
         let expr = parse_string("5 != 3").unwrap();
-        assert!(matches!(expr, Expr::InfixExpr { op: BinaryOp::NotEqual, .. }));
+        assert!(matches!(
+            expr,
+            Expr::InfixExpr {
+                op: BinaryOp::NotEqual,
+                ..
+            }
+        ));
     }
 
     #[test]
     fn test_parse_comparison_less() {
         let expr = parse_string("3 < 5").unwrap();
-        assert!(matches!(expr, Expr::InfixExpr { op: BinaryOp::Less, .. }));
+        assert!(matches!(
+            expr,
+            Expr::InfixExpr {
+                op: BinaryOp::Less,
+                ..
+            }
+        ));
     }
 
     #[test]
     fn test_parse_comparison_greater() {
         let expr = parse_string("5 > 3").unwrap();
-        assert!(matches!(expr, Expr::InfixExpr { op: BinaryOp::Greater, .. }));
+        assert!(matches!(
+            expr,
+            Expr::InfixExpr {
+                op: BinaryOp::Greater,
+                ..
+            }
+        ));
     }
 
     #[test]
     fn test_parse_comparison_less_equal() {
         let expr = parse_string("3 <= 5").unwrap();
-        assert!(matches!(expr, Expr::InfixExpr { op: BinaryOp::LessEqual, .. }));
+        assert!(matches!(
+            expr,
+            Expr::InfixExpr {
+                op: BinaryOp::LessEqual,
+                ..
+            }
+        ));
     }
 
     #[test]
     fn test_parse_comparison_greater_equal() {
         let expr = parse_string("5 >= 3").unwrap();
-        assert!(matches!(expr, Expr::InfixExpr { op: BinaryOp::GreaterEqual, .. }));
+        assert!(matches!(
+            expr,
+            Expr::InfixExpr {
+                op: BinaryOp::GreaterEqual,
+                ..
+            }
+        ));
     }
 
     #[test]
     fn test_parse_comparison_precedence() {
         // 1 + 2 < 5 should parse as (1 + 2) < 5
         let expr = parse_string("1 + 2 < 5").unwrap();
-        if let Expr::InfixExpr { left, op, right, .. } = expr {
+        if let Expr::InfixExpr {
+            left, op, right, ..
+        } = expr
+        {
             assert_eq!(op, BinaryOp::Less);
-            assert!(matches!(left.as_ref(), Expr::InfixExpr { op: BinaryOp::Plus, .. }));
+            assert!(matches!(
+                left.as_ref(),
+                Expr::InfixExpr {
+                    op: BinaryOp::Plus,
+                    ..
+                }
+            ));
             assert!(matches!(right.as_ref(), Expr::Int { value: 5, .. }));
         } else {
             panic!("Expected infix expression");
@@ -334,10 +439,25 @@ mod tests {
     fn test_parse_comparison_with_logical() {
         // 1 < 2 && 3 > 2 should parse as (1 < 2) && (3 > 2)
         let expr = parse_string("1 < 2 && 3 > 2").unwrap();
-        if let Expr::InfixExpr { left, op, right, .. } = expr {
+        if let Expr::InfixExpr {
+            left, op, right, ..
+        } = expr
+        {
             assert_eq!(op, BinaryOp::LogicalAnd);
-            assert!(matches!(left.as_ref(), Expr::InfixExpr { op: BinaryOp::Less, .. }));
-            assert!(matches!(right.as_ref(), Expr::InfixExpr { op: BinaryOp::Greater, .. }));
+            assert!(matches!(
+                left.as_ref(),
+                Expr::InfixExpr {
+                    op: BinaryOp::Less,
+                    ..
+                }
+            ));
+            assert!(matches!(
+                right.as_ref(),
+                Expr::InfixExpr {
+                    op: BinaryOp::Greater,
+                    ..
+                }
+            ));
         } else {
             panic!("Expected infix expression");
         }

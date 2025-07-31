@@ -1,8 +1,8 @@
 //! Tokenizer implementation
 
+use super::token::{Token, TokenKind};
 use crate::error::{LexError, LexResult};
 use crate::span::{Position, Span};
-use super::token::{Token, TokenKind};
 
 /// Trait for lexical analysis
 pub trait Lexer {
@@ -127,12 +127,17 @@ impl SobaLexer {
         Ok(Token::new(kind, span))
     }
 
-    fn read_two_char_token(&mut self, first_char: char, second_char: char, kind: TokenKind) -> LexResult<Token> {
+    fn read_two_char_token(
+        &mut self,
+        first_char: char,
+        second_char: char,
+        kind: TokenKind,
+    ) -> LexResult<Token> {
         let start_pos = self.position;
-        
+
         // Consume first character
         self.advance();
-        
+
         // Check if second character matches
         if self.current_char() == Some(second_char) {
             self.advance(); // consume second character
@@ -165,16 +170,24 @@ impl Lexer for SobaLexer {
                         '!' => {
                             // Check for !=
                             if self.peek_char() == Some('=') {
-                                return self.read_two_char_token('!', '=', TokenKind::NotEqual).map(Some);
+                                return self
+                                    .read_two_char_token('!', '=', TokenKind::NotEqual)
+                                    .map(Some);
                             } else {
                                 self.read_single_char_token(TokenKind::Bang)
                             }
                         }
-                        '=' => return self.read_two_char_token('=', '=', TokenKind::Equal).map(Some),
+                        '=' => {
+                            return self
+                                .read_two_char_token('=', '=', TokenKind::Equal)
+                                .map(Some)
+                        }
                         '<' => {
                             // Check for <=
                             if self.peek_char() == Some('=') {
-                                return self.read_two_char_token('<', '=', TokenKind::LessEqual).map(Some);
+                                return self
+                                    .read_two_char_token('<', '=', TokenKind::LessEqual)
+                                    .map(Some);
                             } else {
                                 self.read_single_char_token(TokenKind::Less)
                             }
@@ -182,13 +195,23 @@ impl Lexer for SobaLexer {
                         '>' => {
                             // Check for >=
                             if self.peek_char() == Some('=') {
-                                return self.read_two_char_token('>', '=', TokenKind::GreaterEqual).map(Some);
+                                return self
+                                    .read_two_char_token('>', '=', TokenKind::GreaterEqual)
+                                    .map(Some);
                             } else {
                                 self.read_single_char_token(TokenKind::Greater)
                             }
                         }
-                        '&' => return self.read_two_char_token('&', '&', TokenKind::AndAnd).map(Some),
-                        '|' => return self.read_two_char_token('|', '|', TokenKind::OrOr).map(Some),
+                        '&' => {
+                            return self
+                                .read_two_char_token('&', '&', TokenKind::AndAnd)
+                                .map(Some)
+                        }
+                        '|' => {
+                            return self
+                                .read_two_char_token('|', '|', TokenKind::OrOr)
+                                .map(Some)
+                        }
                         '(' => self.read_single_char_token(TokenKind::LeftParen),
                         ')' => self.read_single_char_token(TokenKind::RightParen),
                         _ => return Err(LexError::UnexpectedCharacter(ch)),
@@ -207,11 +230,11 @@ mod tests {
     fn tokenize(input: &str) -> LexResult<Vec<Token>> {
         let mut lexer = SobaLexer::new(input.chars().collect());
         let mut tokens = Vec::new();
-        
+
         while let Some(token) = lexer.next_token()? {
             tokens.push(token);
         }
-        
+
         Ok(tokens)
     }
 
