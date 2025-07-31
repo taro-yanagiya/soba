@@ -49,7 +49,13 @@ pub enum BinaryOp {
     Divide,
     LogicalAnd,
     LogicalOr,
-    // Future: Modulo, Equal, NotEqual, Less, Greater, etc.
+    Equal,
+    NotEqual,
+    Less,
+    Greater,
+    LessEqual,
+    GreaterEqual,
+    // Future: Modulo, etc.
 }
 
 /// Unary operators
@@ -108,6 +114,12 @@ impl std::fmt::Display for BinaryOp {
             BinaryOp::Divide => write!(f, "/"),
             BinaryOp::LogicalAnd => write!(f, "&&"),
             BinaryOp::LogicalOr => write!(f, "||"),
+            BinaryOp::Equal => write!(f, "=="),
+            BinaryOp::NotEqual => write!(f, "!="),
+            BinaryOp::Less => write!(f, "<"),
+            BinaryOp::Greater => write!(f, ">"),
+            BinaryOp::LessEqual => write!(f, "<="),
+            BinaryOp::GreaterEqual => write!(f, ">="),
         }
     }
 }

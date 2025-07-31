@@ -45,6 +45,21 @@ pub fn eval_expr(expr: &Expr) -> EvalResult<Value> {
                         left_val.logical_or(right_val)
                     }
                 }
+                // Comparison operations - evaluate both sides
+                BinaryOp::Equal | BinaryOp::NotEqual | BinaryOp::Less | BinaryOp::Greater | BinaryOp::LessEqual | BinaryOp::GreaterEqual => {
+                    let left_val = eval_expr(left)?;
+                    let right_val = eval_expr(right)?;
+                    
+                    match op {
+                        BinaryOp::Equal => left_val.equal_to(right_val),
+                        BinaryOp::NotEqual => left_val.not_equal_to(right_val),
+                        BinaryOp::Less => left_val.less_than(right_val),
+                        BinaryOp::Greater => left_val.greater_than(right_val),
+                        BinaryOp::LessEqual => left_val.less_equal(right_val),
+                        BinaryOp::GreaterEqual => left_val.greater_equal(right_val),
+                        _ => unreachable!(),
+                    }
+                }
             }
         }
         
@@ -213,5 +228,103 @@ mod tests {
         };
         
         assert_eq!(eval_expr(&expr).unwrap(), Value::Bool(false));
+    }
+
+    #[test]
+    fn test_eval_comparison_equal() {
+        use crate::span::{Position, Span};
+        
+        let expr = Expr::InfixExpr {
+            left: Box::new(Expr::int(5)),
+            op: BinaryOp::Equal,
+            right: Box::new(Expr::int(5)),
+            span: Span::single(Position::start()),
+        };
+        
+        assert_eq!(eval_expr(&expr).unwrap(), Value::Bool(true));
+    }
+
+    #[test]
+    fn test_eval_comparison_not_equal() {
+        use crate::span::{Position, Span};
+        
+        let expr = Expr::InfixExpr {
+            left: Box::new(Expr::int(5)),
+            op: BinaryOp::NotEqual,
+            right: Box::new(Expr::int(3)),
+            span: Span::single(Position::start()),
+        };
+        
+        assert_eq!(eval_expr(&expr).unwrap(), Value::Bool(true));
+    }
+
+    #[test]
+    fn test_eval_comparison_less() {
+        use crate::span::{Position, Span};
+        
+        let expr = Expr::InfixExpr {
+            left: Box::new(Expr::int(3)),
+            op: BinaryOp::Less,
+            right: Box::new(Expr::int(5)),
+            span: Span::single(Position::start()),
+        };
+        
+        assert_eq!(eval_expr(&expr).unwrap(), Value::Bool(true));
+    }
+
+    #[test]
+    fn test_eval_comparison_greater() {
+        use crate::span::{Position, Span};
+        
+        let expr = Expr::InfixExpr {
+            left: Box::new(Expr::int(5)),
+            op: BinaryOp::Greater,
+            right: Box::new(Expr::int(3)),
+            span: Span::single(Position::start()),
+        };
+        
+        assert_eq!(eval_expr(&expr).unwrap(), Value::Bool(true));
+    }
+
+    #[test]
+    fn test_eval_comparison_less_equal() {
+        use crate::span::{Position, Span};
+        
+        let expr = Expr::InfixExpr {
+            left: Box::new(Expr::int(3)),
+            op: BinaryOp::LessEqual,
+            right: Box::new(Expr::int(5)),
+            span: Span::single(Position::start()),
+        };
+        
+        assert_eq!(eval_expr(&expr).unwrap(), Value::Bool(true));
+    }
+
+    #[test]
+    fn test_eval_comparison_greater_equal() {
+        use crate::span::{Position, Span};
+        
+        let expr = Expr::InfixExpr {
+            left: Box::new(Expr::int(5)),
+            op: BinaryOp::GreaterEqual,
+            right: Box::new(Expr::int(5)),
+            span: Span::single(Position::start()),
+        };
+        
+        assert_eq!(eval_expr(&expr).unwrap(), Value::Bool(true));
+    }
+
+    #[test]
+    fn test_eval_mixed_types_comparison() {
+        use crate::span::{Position, Span};
+        
+        let expr = Expr::InfixExpr {
+            left: Box::new(Expr::int(5)),
+            op: BinaryOp::Equal,
+            right: Box::new(Expr::float(5.0)),
+            span: Span::single(Position::start()),
+        };
+        
+        assert_eq!(eval_expr(&expr).unwrap(), Value::Bool(true));
     }
 }

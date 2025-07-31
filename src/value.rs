@@ -116,6 +116,76 @@ impl Value {
             Ok(Value::Bool(other.is_truthy()))
         }
     }
+
+    // Comparison operations
+    pub fn equal_to(self, other: Value) -> EvalResult<Value> {
+        let result = match (self, other) {
+            (Value::Int(a), Value::Int(b)) => a == b,
+            (Value::Float(a), Value::Float(b)) => (a - b).abs() < f64::EPSILON,
+            (Value::Bool(a), Value::Bool(b)) => a == b,
+            // Mixed numeric types
+            (Value::Int(a), Value::Float(b)) => (a as f64 - b).abs() < f64::EPSILON,
+            (Value::Float(a), Value::Int(b)) => (a - b as f64).abs() < f64::EPSILON,
+            // Different types are not equal
+            _ => false,
+        };
+        Ok(Value::Bool(result))
+    }
+
+    pub fn not_equal_to(self, other: Value) -> EvalResult<Value> {
+        match self.equal_to(other)? {
+            Value::Bool(result) => Ok(Value::Bool(!result)),
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn less_than(self, other: Value) -> EvalResult<Value> {
+        let result = match (self, other) {
+            (Value::Int(a), Value::Int(b)) => a < b,
+            (Value::Float(a), Value::Float(b)) => a < b,
+            (Value::Int(a), Value::Float(b)) => (a as f64) < b,
+            (Value::Float(a), Value::Int(b)) => a < (b as f64),
+            // Boolean comparison not allowed for ordering
+            _ => return Err(EvalError::TypeError("Cannot compare these types for ordering".to_string())),
+        };
+        Ok(Value::Bool(result))
+    }
+
+    pub fn greater_than(self, other: Value) -> EvalResult<Value> {
+        let result = match (self, other) {
+            (Value::Int(a), Value::Int(b)) => a > b,
+            (Value::Float(a), Value::Float(b)) => a > b,
+            (Value::Int(a), Value::Float(b)) => (a as f64) > b,
+            (Value::Float(a), Value::Int(b)) => a > (b as f64),
+            // Boolean comparison not allowed for ordering
+            _ => return Err(EvalError::TypeError("Cannot compare these types for ordering".to_string())),
+        };
+        Ok(Value::Bool(result))
+    }
+
+    pub fn less_equal(self, other: Value) -> EvalResult<Value> {
+        let result = match (self, other) {
+            (Value::Int(a), Value::Int(b)) => a <= b,
+            (Value::Float(a), Value::Float(b)) => a <= b,
+            (Value::Int(a), Value::Float(b)) => (a as f64) <= b,
+            (Value::Float(a), Value::Int(b)) => a <= (b as f64),
+            // Boolean comparison not allowed for ordering
+            _ => return Err(EvalError::TypeError("Cannot compare these types for ordering".to_string())),
+        };
+        Ok(Value::Bool(result))
+    }
+
+    pub fn greater_equal(self, other: Value) -> EvalResult<Value> {
+        let result = match (self, other) {
+            (Value::Int(a), Value::Int(b)) => a >= b,
+            (Value::Float(a), Value::Float(b)) => a >= b,
+            (Value::Int(a), Value::Float(b)) => (a as f64) >= b,
+            (Value::Float(a), Value::Int(b)) => a >= (b as f64),
+            // Boolean comparison not allowed for ordering
+            _ => return Err(EvalError::TypeError("Cannot compare these types for ordering".to_string())),
+        };
+        Ok(Value::Bool(result))
+    }
 }
 
 impl fmt::Display for Value {
@@ -221,5 +291,67 @@ mod tests {
         assert!(Value::Float(1.0).is_truthy());
         assert!(Value::Float(-1.0).is_truthy());
         assert!(!Value::Float(0.0).is_truthy());
+    }
+
+    #[test]
+    fn test_equal_to() {
+        // Same types
+        assert_eq!(Value::Int(5).equal_to(Value::Int(5)).unwrap(), Value::Bool(true));
+        assert_eq!(Value::Int(5).equal_to(Value::Int(3)).unwrap(), Value::Bool(false));
+        assert_eq!(Value::Float(3.14).equal_to(Value::Float(3.14)).unwrap(), Value::Bool(true));
+        assert_eq!(Value::Bool(true).equal_to(Value::Bool(true)).unwrap(), Value::Bool(true));
+        assert_eq!(Value::Bool(true).equal_to(Value::Bool(false)).unwrap(), Value::Bool(false));
+        
+        // Mixed numeric types
+        assert_eq!(Value::Int(5).equal_to(Value::Float(5.0)).unwrap(), Value::Bool(true));
+        assert_eq!(Value::Float(5.0).equal_to(Value::Int(5)).unwrap(), Value::Bool(true));
+        assert_eq!(Value::Int(5).equal_to(Value::Float(5.1)).unwrap(), Value::Bool(false));
+        
+        // Different types
+        assert_eq!(Value::Int(1).equal_to(Value::Bool(true)).unwrap(), Value::Bool(false));
+    }
+
+    #[test]
+    fn test_not_equal_to() {
+        assert_eq!(Value::Int(5).not_equal_to(Value::Int(3)).unwrap(), Value::Bool(true));
+        assert_eq!(Value::Int(5).not_equal_to(Value::Int(5)).unwrap(), Value::Bool(false));
+    }
+
+    #[test]
+    fn test_less_than() {
+        assert_eq!(Value::Int(3).less_than(Value::Int(5)).unwrap(), Value::Bool(true));
+        assert_eq!(Value::Int(5).less_than(Value::Int(3)).unwrap(), Value::Bool(false));
+        assert_eq!(Value::Float(3.5).less_than(Value::Float(5.5)).unwrap(), Value::Bool(true));
+        assert_eq!(Value::Int(3).less_than(Value::Float(3.5)).unwrap(), Value::Bool(true));
+        assert_eq!(Value::Float(3.5).less_than(Value::Int(5)).unwrap(), Value::Bool(true));
+    }
+
+    #[test]
+    fn test_greater_than() {
+        assert_eq!(Value::Int(5).greater_than(Value::Int(3)).unwrap(), Value::Bool(true));
+        assert_eq!(Value::Int(3).greater_than(Value::Int(5)).unwrap(), Value::Bool(false));
+        assert_eq!(Value::Float(5.5).greater_than(Value::Float(3.5)).unwrap(), Value::Bool(true));
+    }
+
+    #[test]
+    fn test_less_equal() {
+        assert_eq!(Value::Int(3).less_equal(Value::Int(5)).unwrap(), Value::Bool(true));
+        assert_eq!(Value::Int(5).less_equal(Value::Int(5)).unwrap(), Value::Bool(true));
+        assert_eq!(Value::Int(7).less_equal(Value::Int(5)).unwrap(), Value::Bool(false));
+    }
+
+    #[test]
+    fn test_greater_equal() {
+        assert_eq!(Value::Int(5).greater_equal(Value::Int(3)).unwrap(), Value::Bool(true));
+        assert_eq!(Value::Int(5).greater_equal(Value::Int(5)).unwrap(), Value::Bool(true));
+        assert_eq!(Value::Int(3).greater_equal(Value::Int(5)).unwrap(), Value::Bool(false));
+    }
+
+    #[test]
+    fn test_comparison_type_errors() {
+        // Boolean ordering should fail
+        assert!(Value::Bool(true).less_than(Value::Bool(false)).is_err());
+        assert!(Value::Bool(true).greater_than(Value::Int(1)).is_err());
+        assert!(Value::Int(5).less_than(Value::Bool(true)).is_err());
     }
 }

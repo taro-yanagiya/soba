@@ -95,6 +95,12 @@ impl<L: Lexer> Parser<L> {
                     TokenKind::Slash => BinaryOp::Divide,
                     TokenKind::AndAnd => BinaryOp::LogicalAnd,
                     TokenKind::OrOr => BinaryOp::LogicalOr,
+                    TokenKind::Equal => BinaryOp::Equal,
+                    TokenKind::NotEqual => BinaryOp::NotEqual,
+                    TokenKind::Less => BinaryOp::Less,
+                    TokenKind::Greater => BinaryOp::Greater,
+                    TokenKind::LessEqual => BinaryOp::LessEqual,
+                    TokenKind::GreaterEqual => BinaryOp::GreaterEqual,
                     _ => return Err(ParseError::UnexpectedToken(token.to_string())),
                 };
 
@@ -270,6 +276,68 @@ mod tests {
             assert_eq!(op, BinaryOp::LogicalOr);
             assert!(matches!(left.as_ref(), Expr::Bool { value: true, .. }));
             assert!(matches!(right.as_ref(), Expr::InfixExpr { op: BinaryOp::LogicalAnd, .. }));
+        } else {
+            panic!("Expected infix expression");
+        }
+    }
+
+    #[test]
+    fn test_parse_comparison_equal() {
+        let expr = parse_string("5 == 5").unwrap();
+        assert!(matches!(expr, Expr::InfixExpr { op: BinaryOp::Equal, .. }));
+    }
+
+    #[test]
+    fn test_parse_comparison_not_equal() {
+        let expr = parse_string("5 != 3").unwrap();
+        assert!(matches!(expr, Expr::InfixExpr { op: BinaryOp::NotEqual, .. }));
+    }
+
+    #[test]
+    fn test_parse_comparison_less() {
+        let expr = parse_string("3 < 5").unwrap();
+        assert!(matches!(expr, Expr::InfixExpr { op: BinaryOp::Less, .. }));
+    }
+
+    #[test]
+    fn test_parse_comparison_greater() {
+        let expr = parse_string("5 > 3").unwrap();
+        assert!(matches!(expr, Expr::InfixExpr { op: BinaryOp::Greater, .. }));
+    }
+
+    #[test]
+    fn test_parse_comparison_less_equal() {
+        let expr = parse_string("3 <= 5").unwrap();
+        assert!(matches!(expr, Expr::InfixExpr { op: BinaryOp::LessEqual, .. }));
+    }
+
+    #[test]
+    fn test_parse_comparison_greater_equal() {
+        let expr = parse_string("5 >= 3").unwrap();
+        assert!(matches!(expr, Expr::InfixExpr { op: BinaryOp::GreaterEqual, .. }));
+    }
+
+    #[test]
+    fn test_parse_comparison_precedence() {
+        // 1 + 2 < 5 should parse as (1 + 2) < 5
+        let expr = parse_string("1 + 2 < 5").unwrap();
+        if let Expr::InfixExpr { left, op, right, .. } = expr {
+            assert_eq!(op, BinaryOp::Less);
+            assert!(matches!(left.as_ref(), Expr::InfixExpr { op: BinaryOp::Plus, .. }));
+            assert!(matches!(right.as_ref(), Expr::Int { value: 5, .. }));
+        } else {
+            panic!("Expected infix expression");
+        }
+    }
+
+    #[test]
+    fn test_parse_comparison_with_logical() {
+        // 1 < 2 && 3 > 2 should parse as (1 < 2) && (3 > 2)
+        let expr = parse_string("1 < 2 && 3 > 2").unwrap();
+        if let Expr::InfixExpr { left, op, right, .. } = expr {
+            assert_eq!(op, BinaryOp::LogicalAnd);
+            assert!(matches!(left.as_ref(), Expr::InfixExpr { op: BinaryOp::Less, .. }));
+            assert!(matches!(right.as_ref(), Expr::InfixExpr { op: BinaryOp::Greater, .. }));
         } else {
             panic!("Expected infix expression");
         }

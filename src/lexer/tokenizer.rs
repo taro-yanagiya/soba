@@ -29,6 +29,10 @@ impl SobaLexer {
         self.input.get(self.current_index).copied()
     }
 
+    fn peek_char(&self) -> Option<char> {
+        self.input.get(self.current_index + 1).copied()
+    }
+
     fn advance(&mut self) -> Option<char> {
         if let Some(ch) = self.current_char() {
             self.position.advance(ch);
@@ -158,7 +162,31 @@ impl Lexer for SobaLexer {
                         '-' => self.read_single_char_token(TokenKind::Minus),
                         '*' => self.read_single_char_token(TokenKind::Asterisk),
                         '/' => self.read_single_char_token(TokenKind::Slash),
-                        '!' => self.read_single_char_token(TokenKind::Bang),
+                        '!' => {
+                            // Check for !=
+                            if self.peek_char() == Some('=') {
+                                return self.read_two_char_token('!', '=', TokenKind::NotEqual).map(Some);
+                            } else {
+                                self.read_single_char_token(TokenKind::Bang)
+                            }
+                        }
+                        '=' => return self.read_two_char_token('=', '=', TokenKind::Equal).map(Some),
+                        '<' => {
+                            // Check for <=
+                            if self.peek_char() == Some('=') {
+                                return self.read_two_char_token('<', '=', TokenKind::LessEqual).map(Some);
+                            } else {
+                                self.read_single_char_token(TokenKind::Less)
+                            }
+                        }
+                        '>' => {
+                            // Check for >=
+                            if self.peek_char() == Some('=') {
+                                return self.read_two_char_token('>', '=', TokenKind::GreaterEqual).map(Some);
+                            } else {
+                                self.read_single_char_token(TokenKind::Greater)
+                            }
+                        }
                         '&' => return self.read_two_char_token('&', '&', TokenKind::AndAnd).map(Some),
                         '|' => return self.read_two_char_token('|', '|', TokenKind::OrOr).map(Some),
                         '(' => self.read_single_char_token(TokenKind::LeftParen),
@@ -296,6 +324,52 @@ mod tests {
     #[test]
     fn test_invalid_single_pipe() {
         let result = tokenize("|");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_comparison_operators() {
+        let tokens = tokenize("==").unwrap();
+        assert_eq!(tokens.len(), 1);
+        assert_eq!(tokens[0].kind, TokenKind::Equal);
+
+        let tokens = tokenize("!=").unwrap();
+        assert_eq!(tokens.len(), 1);
+        assert_eq!(tokens[0].kind, TokenKind::NotEqual);
+
+        let tokens = tokenize("<").unwrap();
+        assert_eq!(tokens.len(), 1);
+        assert_eq!(tokens[0].kind, TokenKind::Less);
+
+        let tokens = tokenize(">").unwrap();
+        assert_eq!(tokens.len(), 1);
+        assert_eq!(tokens[0].kind, TokenKind::Greater);
+
+        let tokens = tokenize("<=").unwrap();
+        assert_eq!(tokens.len(), 1);
+        assert_eq!(tokens[0].kind, TokenKind::LessEqual);
+
+        let tokens = tokenize(">=").unwrap();
+        assert_eq!(tokens.len(), 1);
+        assert_eq!(tokens[0].kind, TokenKind::GreaterEqual);
+    }
+
+    #[test]
+    fn test_comparison_expression() {
+        let tokens = tokenize("5 < 10 && 3 >= 2").unwrap();
+        assert_eq!(tokens.len(), 7);
+        assert_eq!(tokens[0].kind, TokenKind::Int(5));
+        assert_eq!(tokens[1].kind, TokenKind::Less);
+        assert_eq!(tokens[2].kind, TokenKind::Int(10));
+        assert_eq!(tokens[3].kind, TokenKind::AndAnd);
+        assert_eq!(tokens[4].kind, TokenKind::Int(3));
+        assert_eq!(tokens[5].kind, TokenKind::GreaterEqual);
+        assert_eq!(tokens[6].kind, TokenKind::Int(2));
+    }
+
+    #[test]
+    fn test_invalid_single_equals() {
+        let result = tokenize("=");
         assert!(result.is_err());
     }
 }

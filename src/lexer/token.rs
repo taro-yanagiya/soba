@@ -27,6 +27,14 @@ pub enum TokenKind {
     AndAnd,      // &&
     OrOr,        // ||
     
+    // Comparison operators
+    Equal,       // ==
+    NotEqual,    // !=
+    Less,        // <
+    Greater,     // >
+    LessEqual,   // <=
+    GreaterEqual, // >=
+    
     // Delimiters
     LeftParen,
     RightParen,
@@ -63,6 +71,12 @@ impl std::fmt::Display for TokenKind {
             TokenKind::Bang => write!(f, "!"),
             TokenKind::AndAnd => write!(f, "&&"),
             TokenKind::OrOr => write!(f, "||"),
+            TokenKind::Equal => write!(f, "=="),
+            TokenKind::NotEqual => write!(f, "!="),
+            TokenKind::Less => write!(f, "<"),
+            TokenKind::Greater => write!(f, ">"),
+            TokenKind::LessEqual => write!(f, "<="),
+            TokenKind::GreaterEqual => write!(f, ">="),
             TokenKind::LeftParen => write!(f, "("),
             TokenKind::RightParen => write!(f, ")"),
             TokenKind::Eof => write!(f, "EOF"),
