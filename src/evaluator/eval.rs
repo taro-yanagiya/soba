@@ -1,6 +1,6 @@
 //! Expression evaluation
 
-use crate::ast::{BinaryOp, Expr, UnaryOp};
+use crate::ast::{BinaryOp, Expr, Program, Statement, UnaryOp};
 use crate::error::EvalResult;
 use crate::value::Value;
 
@@ -81,6 +81,29 @@ pub fn eval_expr(expr: &Expr) -> EvalResult<Value> {
             }
         }
     }
+}
+
+/// Evaluate a statement AST node
+pub fn eval_statement(stmt: &Statement) -> EvalResult<Value> {
+    match stmt {
+        Statement::ExprStatement { expr, .. } => eval_expr(expr),
+    }
+}
+
+/// Evaluate a program AST node
+/// Returns the value of the last statement, or a default value for empty programs
+pub fn eval_program(program: &Program) -> EvalResult<Value> {
+    if program.statements.is_empty() {
+        // Return a default value for empty programs
+        return Ok(Value::Int(0));
+    }
+
+    let mut last_value = Value::Int(0);
+    for stmt in &program.statements {
+        last_value = eval_statement(stmt)?;
+    }
+
+    Ok(last_value)
 }
 
 #[cfg(test)]
@@ -333,5 +356,53 @@ mod tests {
         };
 
         assert_eq!(eval_expr(&expr).unwrap(), Value::Bool(true));
+    }
+
+    #[test]
+    fn test_eval_statement() {
+        let expr = Expr::int(42);
+        let stmt = Statement::expr_statement(expr);
+        assert_eq!(eval_statement(&stmt).unwrap(), Value::Int(42));
+    }
+
+    #[test]
+    fn test_eval_empty_program() {
+        let program = Program::empty();
+        assert_eq!(eval_program(&program).unwrap(), Value::Int(0));
+    }
+
+    #[test]
+    fn test_eval_single_statement_program() {
+        let expr = Expr::int(42);
+        let stmt = Statement::expr_statement(expr);
+        let program = Program::new(vec![stmt]);
+        assert_eq!(eval_program(&program).unwrap(), Value::Int(42));
+    }
+
+    #[test]
+    fn test_eval_multiple_statement_program() {
+        use crate::span::{Position, Span};
+
+        // Create statements: 1 + 2; 3 * 4; 10;
+        let stmt1 = Statement::expr_statement(Expr::InfixExpr {
+            left: Box::new(Expr::int(1)),
+            op: BinaryOp::Plus,
+            right: Box::new(Expr::int(2)),
+            span: Span::single(Position::start()),
+        });
+
+        let stmt2 = Statement::expr_statement(Expr::InfixExpr {
+            left: Box::new(Expr::int(3)),
+            op: BinaryOp::Multiply,
+            right: Box::new(Expr::int(4)),
+            span: Span::single(Position::start()),
+        });
+
+        let stmt3 = Statement::expr_statement(Expr::int(10));
+
+        let program = Program::new(vec![stmt1, stmt2, stmt3]);
+        
+        // Should return the value of the last statement (10)
+        assert_eq!(eval_program(&program).unwrap(), Value::Int(10));
     }
 }

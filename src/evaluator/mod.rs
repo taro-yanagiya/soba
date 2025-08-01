@@ -4,4 +4,4 @@
 
 pub mod eval;
 
-pub use eval::eval_expr;
+pub use eval::{eval_expr, eval_program, eval_statement};

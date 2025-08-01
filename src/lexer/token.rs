@@ -38,6 +38,7 @@ pub enum TokenKind {
     // Delimiters
     LeftParen,
     RightParen,
+    Semicolon,
 
     // Special
     Eof,
@@ -79,6 +80,7 @@ impl std::fmt::Display for TokenKind {
             TokenKind::GreaterEqual => write!(f, ">="),
             TokenKind::LeftParen => write!(f, "("),
             TokenKind::RightParen => write!(f, ")"),
+            TokenKind::Semicolon => write!(f, ";"),
             TokenKind::Eof => write!(f, "EOF"),
         }
     }

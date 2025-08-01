@@ -1,7 +1,7 @@
 use rustyline::config::Configurer;
 use rustyline::error::ReadlineError;
 use rustyline::DefaultEditor;
-use soba::eval_string;
+use soba::eval_program_string;
 fn main() -> rustyline::Result<()> {
     println!("This is the Soba programming language!");
 
@@ -31,7 +31,7 @@ fn main() -> rustyline::Result<()> {
                     continue;
                 }
 
-                match eval_string(&line) {
+                match eval_program_string(&line) {
                     Ok(result) => {
                         println!("{result}");
                     }

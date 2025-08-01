@@ -214,6 +214,7 @@ impl Lexer for SobaLexer {
                         }
                         '(' => self.read_single_char_token(TokenKind::LeftParen),
                         ')' => self.read_single_char_token(TokenKind::RightParen),
+                        ';' => self.read_single_char_token(TokenKind::Semicolon),
                         _ => return Err(LexError::UnexpectedCharacter(ch)),
                     };
                     Ok(Some(token))
@@ -394,5 +395,36 @@ mod tests {
     fn test_invalid_single_equals() {
         let result = tokenize("=");
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_semicolon() {
+        let tokens = tokenize(";").unwrap();
+        assert_eq!(tokens.len(), 1);
+        assert_eq!(tokens[0].kind, TokenKind::Semicolon);
+    }
+
+    #[test]
+    fn test_statement() {
+        let tokens = tokenize("2 + 3;").unwrap();
+        assert_eq!(tokens.len(), 4);
+        assert_eq!(tokens[0].kind, TokenKind::Int(2));
+        assert_eq!(tokens[1].kind, TokenKind::Plus);
+        assert_eq!(tokens[2].kind, TokenKind::Int(3));
+        assert_eq!(tokens[3].kind, TokenKind::Semicolon);
+    }
+
+    #[test]
+    fn test_multiple_statements() {
+        let tokens = tokenize("1 + 2; 3 * 4;").unwrap();
+        assert_eq!(tokens.len(), 8);
+        assert_eq!(tokens[0].kind, TokenKind::Int(1));
+        assert_eq!(tokens[1].kind, TokenKind::Plus);
+        assert_eq!(tokens[2].kind, TokenKind::Int(2));
+        assert_eq!(tokens[3].kind, TokenKind::Semicolon);
+        assert_eq!(tokens[4].kind, TokenKind::Int(3));
+        assert_eq!(tokens[5].kind, TokenKind::Asterisk);
+        assert_eq!(tokens[6].kind, TokenKind::Int(4));
+        assert_eq!(tokens[7].kind, TokenKind::Semicolon);
     }
 }

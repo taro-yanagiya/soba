@@ -1,7 +1,7 @@
 //! Parser implementation using Pratt parsing
 
 use super::precedence::Precedence;
-use crate::ast::{BinaryOp, Expr, UnaryOp};
+use crate::ast::{BinaryOp, Expr, Program, Statement, UnaryOp};
 use crate::error::{ParseError, ParseResult};
 use crate::lexer::{Lexer, Token, TokenKind};
 
@@ -30,11 +30,40 @@ impl<L: Lexer> Parser<L> {
         Ok(())
     }
 
-    pub fn parse(&mut self) -> ParseResult<Expr> {
-        self.parse_expression(Precedence::Lowest)
+    /// Parse a single expression (test-only method)
+    /// This method is only available in test builds and is used for testing
+    /// individual expression parsing without requiring a full program structure.
+    #[cfg(test)]
+    pub fn parse_expression(&mut self) -> ParseResult<Expr> {
+        self.parse_expression_with_precedence(Precedence::Lowest)
     }
 
-    fn parse_expression(&mut self, precedence: Precedence) -> ParseResult<Expr> {
+    pub fn parse_program(&mut self) -> ParseResult<Program> {
+        let mut statements = Vec::new();
+
+        while self.current_token.is_some() {
+            let expr = self.parse_expression_with_precedence(Precedence::Lowest)?;
+            let span = expr.span();
+            let stmt = Statement::ExprStatement { expr, span };
+            statements.push(stmt);
+
+            // Check if there's a semicolon
+            if matches!(
+                self.peek_token.as_ref().map(|t| &t.kind),
+                Some(TokenKind::Semicolon)
+            ) {
+                self.next_token()?; // move to semicolon
+                self.next_token()?; // consume semicolon and move to next token
+            } else {
+                // No semicolon - this should be the last statement
+                break;
+            }
+        }
+
+        Ok(Program::new(statements))
+    }
+
+    fn parse_expression_with_precedence(&mut self, precedence: Precedence) -> ParseResult<Expr> {
         let mut left = self.parse_prefix()?;
 
         while let Some(ref peek) = self.peek_token {
@@ -102,7 +131,7 @@ impl<L: Lexer> Parser<L> {
                 let precedence = Precedence::from_token(&token.kind);
 
                 self.next_token()?;
-                let right = self.parse_expression(precedence)?;
+                let right = self.parse_expression_with_precedence(precedence)?;
 
                 let span = left.span().merge(right.span());
 
@@ -121,7 +150,7 @@ impl<L: Lexer> Parser<L> {
         let start_span = self.current_token.as_ref().unwrap().span;
 
         self.next_token()?; // consume '('
-        let expr = self.parse_expression(Precedence::Lowest)?;
+        let expr = self.parse_expression_with_precedence(Precedence::Lowest)?;
 
         if !matches!(
             self.peek_token.as_ref().map(|t| &t.kind),
@@ -152,7 +181,7 @@ impl<L: Lexer> Parser<L> {
         let op_span = token.span;
 
         self.next_token()?;
-        let operand = self.parse_expression(Precedence::Unary)?;
+        let operand = self.parse_expression_with_precedence(Precedence::Unary)?;
 
         let span = op_span.merge(operand.span());
 
@@ -169,27 +198,33 @@ mod tests {
     use super::*;
     use crate::lexer::SobaLexer;
 
-    fn parse_string(input: &str) -> ParseResult<Expr> {
+    fn parse_expression_string(input: &str) -> ParseResult<Expr> {
         let lexer = SobaLexer::new(input.chars().collect());
         let mut parser = Parser::new(lexer)?;
-        parser.parse()
+        parser.parse_expression()
+    }
+
+    fn parse_program_string(input: &str) -> ParseResult<Program> {
+        let lexer = SobaLexer::new(input.chars().collect());
+        let mut parser = Parser::new(lexer)?;
+        parser.parse_program()
     }
 
     #[test]
     fn test_parse_integer() {
-        let expr = parse_string("42").unwrap();
+        let expr = parse_expression_string("42").unwrap();
         assert!(matches!(expr, Expr::Int { value: 42, .. }));
     }
 
     #[test]
     fn test_parse_float() {
-        let expr = parse_string("3.14").unwrap();
+        let expr = parse_expression_string("3.14").unwrap();
         assert!(matches!(expr, Expr::Float { value, .. } if (value - 3.14).abs() < 1e-10));
     }
 
     #[test]
     fn test_parse_addition() {
-        let expr = parse_string("1 + 2").unwrap();
+        let expr = parse_expression_string("1 + 2").unwrap();
         assert!(matches!(
             expr,
             Expr::InfixExpr {
@@ -201,7 +236,7 @@ mod tests {
 
     #[test]
     fn test_parse_precedence() {
-        let expr = parse_string("1 + 2 * 3").unwrap();
+        let expr = parse_expression_string("1 + 2 * 3").unwrap();
         if let Expr::InfixExpr {
             left, op, right, ..
         } = expr
@@ -222,13 +257,13 @@ mod tests {
 
     #[test]
     fn test_parse_grouped() {
-        let expr = parse_string("(1 + 2)").unwrap();
+        let expr = parse_expression_string("(1 + 2)").unwrap();
         assert!(matches!(expr, Expr::Grouped { .. }));
     }
 
     #[test]
     fn test_parse_unary() {
-        let expr = parse_string("-5").unwrap();
+        let expr = parse_expression_string("-5").unwrap();
         assert!(matches!(
             expr,
             Expr::UnaryExpr {
@@ -240,7 +275,7 @@ mod tests {
 
     #[test]
     fn test_parse_division() {
-        let expr = parse_string("8 / 2").unwrap();
+        let expr = parse_expression_string("8 / 2").unwrap();
         assert!(matches!(
             expr,
             Expr::InfixExpr {
@@ -252,7 +287,7 @@ mod tests {
 
     #[test]
     fn test_parse_division_precedence() {
-        let expr = parse_string("2 + 8 / 4").unwrap();
+        let expr = parse_expression_string("2 + 8 / 4").unwrap();
         if let Expr::InfixExpr {
             left, op, right, ..
         } = expr
@@ -273,19 +308,19 @@ mod tests {
 
     #[test]
     fn test_parse_boolean_true() {
-        let expr = parse_string("true").unwrap();
+        let expr = parse_expression_string("true").unwrap();
         assert!(matches!(expr, Expr::Bool { value: true, .. }));
     }
 
     #[test]
     fn test_parse_boolean_false() {
-        let expr = parse_string("false").unwrap();
+        let expr = parse_expression_string("false").unwrap();
         assert!(matches!(expr, Expr::Bool { value: false, .. }));
     }
 
     #[test]
     fn test_parse_logical_not() {
-        let expr = parse_string("!true").unwrap();
+        let expr = parse_expression_string("!true").unwrap();
         assert!(matches!(
             expr,
             Expr::UnaryExpr {
@@ -297,7 +332,7 @@ mod tests {
 
     #[test]
     fn test_parse_logical_and() {
-        let expr = parse_string("true && false").unwrap();
+        let expr = parse_expression_string("true && false").unwrap();
         assert!(matches!(
             expr,
             Expr::InfixExpr {
@@ -309,7 +344,7 @@ mod tests {
 
     #[test]
     fn test_parse_logical_or() {
-        let expr = parse_string("true || false").unwrap();
+        let expr = parse_expression_string("true || false").unwrap();
         assert!(matches!(
             expr,
             Expr::InfixExpr {
@@ -322,7 +357,7 @@ mod tests {
     #[test]
     fn test_parse_logical_precedence() {
         // true || false && true should parse as true || (false && true)
-        let expr = parse_string("true || false && true").unwrap();
+        let expr = parse_expression_string("true || false && true").unwrap();
         if let Expr::InfixExpr {
             left, op, right, ..
         } = expr
@@ -343,7 +378,7 @@ mod tests {
 
     #[test]
     fn test_parse_comparison_equal() {
-        let expr = parse_string("5 == 5").unwrap();
+        let expr = parse_expression_string("5 == 5").unwrap();
         assert!(matches!(
             expr,
             Expr::InfixExpr {
@@ -355,7 +390,7 @@ mod tests {
 
     #[test]
     fn test_parse_comparison_not_equal() {
-        let expr = parse_string("5 != 3").unwrap();
+        let expr = parse_expression_string("5 != 3").unwrap();
         assert!(matches!(
             expr,
             Expr::InfixExpr {
@@ -367,7 +402,7 @@ mod tests {
 
     #[test]
     fn test_parse_comparison_less() {
-        let expr = parse_string("3 < 5").unwrap();
+        let expr = parse_expression_string("3 < 5").unwrap();
         assert!(matches!(
             expr,
             Expr::InfixExpr {
@@ -379,7 +414,7 @@ mod tests {
 
     #[test]
     fn test_parse_comparison_greater() {
-        let expr = parse_string("5 > 3").unwrap();
+        let expr = parse_expression_string("5 > 3").unwrap();
         assert!(matches!(
             expr,
             Expr::InfixExpr {
@@ -391,7 +426,7 @@ mod tests {
 
     #[test]
     fn test_parse_comparison_less_equal() {
-        let expr = parse_string("3 <= 5").unwrap();
+        let expr = parse_expression_string("3 <= 5").unwrap();
         assert!(matches!(
             expr,
             Expr::InfixExpr {
@@ -403,7 +438,7 @@ mod tests {
 
     #[test]
     fn test_parse_comparison_greater_equal() {
-        let expr = parse_string("5 >= 3").unwrap();
+        let expr = parse_expression_string("5 >= 3").unwrap();
         assert!(matches!(
             expr,
             Expr::InfixExpr {
@@ -416,7 +451,7 @@ mod tests {
     #[test]
     fn test_parse_comparison_precedence() {
         // 1 + 2 < 5 should parse as (1 + 2) < 5
-        let expr = parse_string("1 + 2 < 5").unwrap();
+        let expr = parse_expression_string("1 + 2 < 5").unwrap();
         if let Expr::InfixExpr {
             left, op, right, ..
         } = expr
@@ -438,7 +473,7 @@ mod tests {
     #[test]
     fn test_parse_comparison_with_logical() {
         // 1 < 2 && 3 > 2 should parse as (1 < 2) && (3 > 2)
-        let expr = parse_string("1 < 2 && 3 > 2").unwrap();
+        let expr = parse_expression_string("1 < 2 && 3 > 2").unwrap();
         if let Expr::InfixExpr {
             left, op, right, ..
         } = expr
@@ -460,6 +495,119 @@ mod tests {
             ));
         } else {
             panic!("Expected infix expression");
+        }
+    }
+
+    #[test]
+    fn test_parse_single_statement() {
+        let program = parse_program_string("2 + 3;").unwrap();
+        assert_eq!(program.statements.len(), 1);
+        
+        match &program.statements[0] {
+            Statement::ExprStatement { expr, .. } => {
+                assert!(matches!(
+                    expr,
+                    Expr::InfixExpr {
+                        op: BinaryOp::Plus,
+                        ..
+                    }
+                ));
+            }
+        }
+    }
+
+    #[test]
+    fn test_parse_multiple_statements() {
+        let program = parse_program_string("1 + 2; 3 * 4; 5;").unwrap();
+        assert_eq!(program.statements.len(), 3);
+        
+        // First statement: 1 + 2
+        match &program.statements[0] {
+            Statement::ExprStatement { expr, .. } => {
+                assert!(matches!(
+                    expr,
+                    Expr::InfixExpr {
+                        op: BinaryOp::Plus,
+                        ..
+                    }
+                ));
+            }
+        }
+        
+        // Second statement: 3 * 4
+        match &program.statements[1] {
+            Statement::ExprStatement { expr, .. } => {
+                assert!(matches!(
+                    expr,
+                    Expr::InfixExpr {
+                        op: BinaryOp::Multiply,
+                        ..
+                    }
+                ));
+            }
+        }
+        
+        // Third statement: 5
+        match &program.statements[2] {
+            Statement::ExprStatement { expr, .. } => {
+                assert!(matches!(expr, Expr::Int { value: 5, .. }));
+            }
+        }
+    }
+
+    #[test]
+    fn test_parse_empty_program() {
+        let program = parse_program_string("").unwrap();
+        assert_eq!(program.statements.len(), 0);
+    }
+
+    #[test]
+    fn test_parse_statement_without_semicolon_as_last() {
+        let program = parse_program_string("2 + 3").unwrap();
+        assert_eq!(program.statements.len(), 1);
+        
+        match &program.statements[0] {
+            Statement::ExprStatement { expr, .. } => {
+                assert!(matches!(
+                    expr,
+                    Expr::InfixExpr {
+                        op: BinaryOp::Plus,
+                        ..
+                    }
+                ));
+            }
+        }
+    }
+
+    #[test]
+    fn test_parse_mixed_semicolons() {
+        let program = parse_program_string("1 + 2; 3 * 4").unwrap();
+        assert_eq!(program.statements.len(), 2);
+        
+        // First statement: 1 + 2 (with semicolon)
+        match &program.statements[0] {
+            Statement::ExprStatement { expr, .. } => {
+                assert!(matches!(
+                    expr,
+                    Expr::InfixExpr {
+                        op: BinaryOp::Plus,
+                        ..
+                    }
+                ));
+            }
+        }
+        
+        // Second statement: 3 * 4 (without semicolon, last statement)
+        match &program.statements[1] {
+            Statement::ExprStatement { expr, .. } => {
+                assert!(matches!(
+                    expr,
+                    Expr::InfixExpr {
+                        op: BinaryOp::Multiply,
+                        ..
+                    }
+                ));
+            }
         }
     }
 }
